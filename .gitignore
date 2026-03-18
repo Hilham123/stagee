@@ -1,0 +1,8 @@
+node_modules/
+ged_fin/node_modules/
+ged_fin_frontend/node_modules/
+.env
+ged_fin/.env
+ged_fin_frontend/.env
+dist/
+build/
