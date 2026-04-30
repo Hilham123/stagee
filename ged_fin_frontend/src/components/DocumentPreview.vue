@@ -23,7 +23,6 @@
 <!-- DOCX -->
 <div v-else-if="type === 'docx'" class="preview-docx" v-html="docxHtml" />
 
-<!-- Non supporté -->
 <div v-else class="preview-unsupported">
     <FileQuestion :size="32" color="#6b7280" />
     <p>Prévisualisation non disponible pour ce type de fichier</p>

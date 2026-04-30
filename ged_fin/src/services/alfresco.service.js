@@ -35,23 +35,6 @@ class AlfrescoService {
     );
   }
 
-  async downloadDocument(nodeId) {
-  const response = await this.client.get(
-    this.endpoints.content(nodeId),
-    { responseType: 'arraybuffer' }
-  );
-  
-  const buf = Buffer.from(response.data)
-  console.log('Alfresco download - taille:', buf.length)
-  console.log('Alfresco download - premiers bytes:', buf[0], buf[1], buf[2], buf[3])
-  
-  return {
-    data: response.data,
-    contentType: response.headers['content-type'],
-    contentDisposition: response.headers['content-disposition'],
-  };
-}
-
   async authenticate() {
     try {
       const response = await axios.post(
@@ -67,10 +50,10 @@ class AlfrescoService {
         `${alfrescoConfig.user}:${alfrescoConfig.password}`
       ).toString('base64');
       this.ticketExpiry = Date.now() + (60 * 60 * 1000);
-      console.log('✅ Authentification Alfresco réussie');
+      console.log('Authentification Alfresco réussie');
       return this.ticket;
     } catch (error) {
-      console.error('❌ Erreur auth Alfresco:', error.message);
+      console.error('Erreur auth Alfresco:', error.message);
       throw new Error('Impossible de se connecter à Alfresco');
     }
   }
@@ -122,14 +105,12 @@ class AlfrescoService {
     if (metadata.title)       formData.append('cm:title', metadata.title);
     if (metadata.description) formData.append('cm:description', metadata.description);
 
-    const ticket = await this.getTicket();
-    const response = await axios.post(
-      `${this.baseURL}${this.endpoints.children(parentNodeId)}`,
+    const response = await this.client.post(
+      this.endpoints.children(parentNodeId),
       formData,
       {
         headers: {
           ...formData.getHeaders(),
-          'Authorization': `Basic ${ticket}`,
         },
       }
     );

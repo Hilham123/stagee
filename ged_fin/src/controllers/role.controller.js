@@ -13,6 +13,13 @@ permissions: {
     canUpload: true, canDownload: true, canSubmit: true,
     canApprove: true, canSign: true, canArchive: true,
     canManageUsers: true, canManageRoles: true, canViewAll: true,
+    'courrier.externe.access': true,
+    'courrier.interne.access': true,
+    'courrier.create': true,
+    'courrier.update': true,
+    'courrier.statut.change': true,
+    'courrier.delete': true,
+    'courrier.stats': true,
 },
 },
 {
@@ -25,6 +32,13 @@ permissions: {
     canUpload: true, canDownload: true, canSubmit: true,
     canApprove: true, canSign: true, canArchive: false,
     canManageUsers: false, canManageRoles: false, canViewAll: true,
+    'courrier.externe.access': false,
+    'courrier.interne.access': true,
+    'courrier.create': true,
+    'courrier.update': true,
+    'courrier.statut.change': true,
+    'courrier.delete': false,
+    'courrier.stats': true,
 },
 },
 {
@@ -37,6 +51,13 @@ permissions: {
     canUpload: true, canDownload: true, canSubmit: true,
     canApprove: false, canSign: false, canArchive: false,
     canManageUsers: false, canManageRoles: false, canViewAll: false,
+    'courrier.externe.access': false,
+    'courrier.interne.access': true,
+    'courrier.create': true,
+    'courrier.update': false,
+    'courrier.statut.change': false,
+    'courrier.delete': false,
+    'courrier.stats': false,
 },
 },
 ];
@@ -47,10 +68,21 @@ const roleController = {
 async initDefaultRoles() {
 try {
 for (const roleData of DEFAULT_ROLES) {
-    await Role.findOrCreate({
+    const [role, created] = await Role.findOrCreate({
     where: { name: roleData.name },
     defaults: roleData,
     });
+
+    // Mettre à jour les rôles déjà existants avec les permissions courrier manquantes.
+    if (!created) {
+    const mergedPermissions = {
+        ...roleData.permissions,
+        ...role.permissions,
+    };
+    if (JSON.stringify(mergedPermissions) !== JSON.stringify(role.permissions)) {
+        await role.update({ permissions: mergedPermissions });
+    }
+    }
 }
 console.log('✅ Rôles par défaut initialisés');
 

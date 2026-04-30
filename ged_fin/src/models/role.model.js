@@ -21,12 +21,35 @@ color: {
 type: DataTypes.STRING(20),
 defaultValue: '#1a3a5c',
 },
-permissions: { 
+permissions: {
 type: DataTypes.JSONB,
 defaultValue: {
-    canUpload: false, canDownload: true, canSubmit: false,
-    canApprove: false, canSign: false, canArchive: false,
-    canManageUsers: false, canManageRoles: false, canViewAll: false,
+    // — Permissions documents (existantes) —
+    canUpload:       false,
+    canDownload:     true,
+    canSubmit:       false,
+    canApprove:      false,
+    canSign:         false,
+    canArchive:      false,
+    canManageUsers:  false,
+    canManageRoles:  false,
+    canViewAll:      false,
+
+    // Permissions courriers
+    // Accès au module courrier externe (réservé service administratif)
+    'courrier.externe':  false,
+    // Accès au module courrier interne (tous les employés)
+    'courrier.interne':  false,
+    // Créer un courrier
+    'creer.courrier':          false,
+    // Modifier un courrier
+    'Mise a jour.Courrier':          false,
+    // Changer le statut d'un courrier
+    'change.statut.courrier':   false,
+    // Supprimer un courrier (admin uniquement)
+    'Supprimer.courrier':          false,
+    // Voir les statistiques courriers
+    'stat.courrier':           false,
 },
 },
 isSystem: {
@@ -43,7 +66,7 @@ tableName: 'roles',
 timestamps: true,
 underscored: true,
 indexes: [
-{ unique: true, fields: ['name'] }
+{ unique: true, fields: ['name'] },
 ],
 });
 

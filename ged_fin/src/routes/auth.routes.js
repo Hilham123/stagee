@@ -19,4 +19,6 @@ router.get('/me', authenticate, authController.getMe);
 // Changer son mot de passe
 router.put('/change-password', authenticate, authController.changePassword);
 
+router.put('/signature', authenticate, authController.saveSignature)
+
 module.exports = router;

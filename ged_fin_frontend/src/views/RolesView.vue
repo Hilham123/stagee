@@ -77,13 +77,13 @@
 
     <div class="form-row">
     <div class="form-group">
-        <label>Nom technique * <small>(ex: COMPTABLE)</small></label>
+        <label>Nom technique * <small>(ex: Technicien)</small></label>
         <input v-model="form.name" type="text" placeholder="NOM_ROLE"
         :disabled="showEditModal" style="text-transform:uppercase" />
     </div>
     <div class="form-group">
         <label>Label affiché *</label>
-        <input v-model="form.label" type="text" placeholder="Ex: Comptable" />
+        <input v-model="form.label" type="text" placeholder="Ex: Technicien" />
     </div>
     </div>
 

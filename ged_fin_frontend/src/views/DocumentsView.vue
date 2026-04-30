@@ -87,8 +87,6 @@
         <div class="actions">
             <button class="btn-action" @click="openDetail(doc)" title="Voir"><Eye :size="15" /></button>
             <button class="btn-action" @click="downloadDoc(doc)" title="Télécharger"><Download :size="15" /></button>
-            <button v-if="canSign(doc)" class="btn-action btn-sign"
-            @click="openSignModal(doc)" title="Signer"><PenLine :size="15" /></button>
             <button v-if="doc.status === 'BROUILLON'"
             class="btn-action btn-submit" @click="submitWorkflow(doc)" title="Soumettre">
             <Send :size="15" />
@@ -235,28 +233,7 @@
 </template>
 </BaseModal>
 
-<!-- Modal Signature -->
-<BaseModal :show="showSignModal" cancel-text="Annuler" @close="showSignModal = false" large>
-<template #title><PenLine :size="20" class="title-icon" /> Signer le document</template>
-<p style="color:#666; margin-bottom:16px">
-Document : <strong>{{ selectedDoc?.title }}</strong>
-</p>
 
-<div v-if="loadingPdf" class="loading">
-<Loader :size="20" class="spin" /> Chargement du document...
-</div>
-
-<SignaturePad
-v-else-if="pdfBytesForSign"
-:pdf-bytes="pdfBytesForSign"
-:signer-name="authStore.user?.firstName + ' ' + authStore.user?.lastName"
-@confirm="handleSign"
-/>
-
-<p class="sign-warning" style="margin-top:12px">
-<AlertTriangle :size="14" /> Cette action est irréversible.
-</p>
-</BaseModal>
 
 <!-- Modal Cachet -->
 <BaseModal :show="showCachetModal" @close="showCachetModal = false">
@@ -277,7 +254,7 @@ import BaseModal        from '../components/BaseModal.vue'
 import SignatureCachet  from '../components/SignatureCachet.vue'
 import DocumentPreview  from '../components/DocumentPreview.vue'
 import {FileText, Eye, Download, Send, Trash2, Search, RotateCcw,Plus, CheckCircle, XCircle, ChevronLeft, ChevronRight,Loader, Upload, History, PenLine, ShieldCheck, AlertTriangle, Info} from 'lucide-vue-next'
-import SignaturePad from '../components/SignaturePad.vue'
+
 
 const pdfBytesForSign = ref(null)
 const loadingPdf      = ref(false)
@@ -486,7 +463,7 @@ onMounted(() => loadDocuments())
 .btn-action:hover { opacity: 0.7; }
 .btn-submit { background: #dbeafe; color: #2563eb; }
 .btn-danger  { background: #fee2e2; color: #dc2626; }
-.btn-sign    { background: #f3e8ff; color: #7c3aed; }
+
 .pagination { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #f0f0f0; }
 .detail-grid { display: flex; flex-direction: column; gap: 12px; }
 .detail-row { display: flex; gap: 16px; align-items: center; padding: 10px; background: #f8f9fa; border-radius: 8px; }

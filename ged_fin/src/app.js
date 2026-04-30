@@ -3,9 +3,8 @@ const express = require('express');
 const cors    = require('cors');
 const morgan  = require('morgan');
 const { connectDB } = require('./config/database');
-
-// Import des modèles (initialise les associations)
 require('./models');
+const { initServices } = require('./config/service.init');
 
 // Import des routes
 const authRoutes       = require('./routes/auth.routes');
@@ -16,6 +15,8 @@ const dashboardRoutes  = require('./routes/dashboard.routes');
 const courrierRoutes   = require('./routes/courrier.routes');
 const userRoutes       = require('./routes/user.routes');
 const roleRoutes       = require('./routes/role.routes');
+const servicesRoutes = require('./routes/services.routes');
+
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -46,6 +47,7 @@ app.use('/api/workflows',  workflowRoutes);
 app.use('/api/signatures', signatureRoutes);
 app.use('/api/dashboard',  dashboardRoutes);
 app.use('/api/courriers',  courrierRoutes);
+app.use('/api/services', servicesRoutes);
 
 // GESTION DES ERREURS GLOBALE
 app.use((err, req, res, next) => {
@@ -56,6 +58,7 @@ app.use((err, req, res, next) => {
   });
 });
 
+
 // DÉMARRAGE DU SERVEUR
 const start = async () => {
   await connectDB();
@@ -63,6 +66,8 @@ const start = async () => {
   // Initialiser les rôles par défaut
   const roleController = require('./controllers/role.controller');
   await roleController.initDefaultRoles();
+
+  await initServices(); // ✅ ajouter cette ligne
 
   app.listen(PORT, () => {
     console.log('─────────────────────────────────────');
@@ -73,6 +78,7 @@ const start = async () => {
     console.log('─────────────────────────────────────');
   });
 };
+
 
 start();
 

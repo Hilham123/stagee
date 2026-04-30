@@ -158,7 +158,7 @@
     </div>
     <div class="form-group">
         <label>Département</label>
-        <input v-model="form.department" type="text" placeholder="Ex: RH, IT..." />
+        <input v-model="form.department" type="text" placeholder="Ex: CM, IT..." />
     </div>
     </div>
     <div class="form-group">
@@ -189,11 +189,7 @@ import { useAuthStore } from '../stores/auth'
 import axios from 'axios'
 import SidebarNav from '../components/SidebarNav.vue'
 import BaseModal  from '../components/BaseModal.vue'
-import {
-Users, Plus, Search, RotateCcw, Loader, Pencil,
-Trash2, UserCheck, UserX, ChevronLeft, ChevronRight,
-Save, Eye, EyeOff
-} from 'lucide-vue-next'
+import {Users, Plus, Search, RotateCcw, Loader, Pencil,Trash2, UserCheck, UserX, ChevronLeft, ChevronRight,Save, Eye, EyeOff} from 'lucide-vue-next'
 
 const authStore  = useAuthStore()
 const users      = ref([])
@@ -201,12 +197,10 @@ const rolesList  = ref([])
 const loading    = ref(true)
 const pagination = ref({ page: 1, pages: 1 })
 const filters    = ref({ role: '', search: '' })
-
 const showCreateModal = ref(false)
 const showEditModal   = ref(false)
 const showPassword    = ref(false)
 const selectedUser    = ref(null)
-
 const emptyForm = () => ({
 firstName: '', lastName: '', email: '',
 roleId: '', department: '', password: ''

@@ -6,7 +6,7 @@ const generateToken = (user) => {
     {
       id:         user.id,
       email:      user.email,
-      role:       user.roleName || user.role,  // ← fix
+      role:       user.roleName || user.role,  
       firstName:  user.firstName,
       lastName:   user.lastName,
       department: user.department,
@@ -44,7 +44,7 @@ const authController = {
 
       const user = await User.findOne({
         where: { email },
-        include: [{ model: Role, as: 'userRole' }]  // ← charge le rôle
+        include: [{ model: Role, as: 'userRole' }]  
       });
       if (!user)
         return res.status(401).json({ success: false, message: 'Email ou mot de passe incorrect.' });
@@ -65,7 +65,7 @@ const authController = {
   async getMe(req, res) {
     try {
       const user = await User.findByPk(req.user.id, {
-        include: [{ model: Role, as: 'userRole' }]  // ← charge le rôle
+        include: [{ model: Role, as: 'userRole' }]  
       });
       if (!user)
         return res.status(404).json({ success: false, message: 'Utilisateur introuvable.' });
@@ -74,6 +74,22 @@ const authController = {
       res.status(500).json({ success: false, message: error.message });
     }
   },
+  async saveSignature(req, res) {
+  try {
+    const { signatureImage, signatureText, signatureFont } = req.body
+    const user = await User.findByPk(req.user.id)
+    if (!user) return res.status(404).json({ success: false, message: 'Utilisateur introuvable.' })
+
+    await user.update({
+      savedSignatureImage: signatureImage || null,
+      savedSignatureText:  signatureText  || null,
+      savedSignatureFont:  signatureFont  || null,
+    })
+    res.json({ success: true, message: 'Signature sauvegardée avec succès.' })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+},
 
   async changePassword(req, res) {
     try {

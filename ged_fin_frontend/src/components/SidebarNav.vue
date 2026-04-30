@@ -15,6 +15,10 @@
     <div class="user-info">
     <div class="user-name">{{ authStore.fullName }}</div>
     <div class="user-role">{{ authStore.userRole }}</div>
+    <!--  Affiche le service de l'utilisateur -->
+    <div class="user-service" v-if="authStore.serviceNom">
+        {{ authStore.serviceNom }}
+    </div>
     </div>
 </div>
 
@@ -24,8 +28,12 @@
     <LayoutDashboard :size="18" />
     <span>Dashboard</span>
     </router-link>
-
-    <router-link to="/courriers" class="nav-item" active-class="active">
+    <router-link
+    v-if="authStore.canAccessCourrierInterne || authStore.canAccessCourrierExterne"
+    to="/courriers"
+    class="nav-item"
+    active-class="active"
+    >
     <Mail :size="18" />
     <span>Courriers</span>
     </router-link>
@@ -53,15 +61,13 @@
     <router-link v-if="authStore.isAdmin" to="/users" class="nav-item" active-class="active">
     <Users :size="18" />
     <span>Utilisateurs</span>
-
     </router-link>
+
     <router-link v-if="authStore.isAdmin" to="/roles" class="nav-item" active-class="active">
     <Shield :size="18" />
     <span>Rôles</span>
     </router-link>
-
 </nav>
-
 
 <!-- Déconnexion -->
 <div class="sidebar-footer">
@@ -78,7 +84,11 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { FolderOpen, LayoutDashboard, Mail, FileText, GitBranch, PenLine, LogOut, Users, Shield, Archive } from 'lucide-vue-next'
+import {
+FolderOpen, LayoutDashboard, Mail, FileText,
+GitBranch, PenLine, LogOut, Users, Shield, Archive
+} from 'lucide-vue-next'
+
 const router    = useRouter()
 const authStore = useAuthStore()
 
@@ -152,15 +162,11 @@ font-weight: 700;
 font-size: 14px;
 flex-shrink: 0;
 }
-
-.user-name  { color: white; font-size: 14px; font-weight: 600; }
-.user-role  { color: rgba(255,255,255,0.6); font-size: 12px; margin-top: 2px; }
-
+.user-name    { color: white; font-size: 14px; font-weight: 600; }
+.user-role    { color: rgba(255,255,255,0.6); font-size: 12px; margin-top: 2px; }
+.user-service { color: rgba(255,255,255,0.4); font-size: 11px; margin-top: 2px; font-style: italic; }
 .sidebar-nav { flex: 1; padding: 16px 0; }
-
-.nav-item {
-display: flex;
-align-items: center;
+.nav-item {display: flex;align-items: center;
 gap: 12px;
 padding: 12px 20px;
 color: rgba(255,255,255,0.7);
@@ -169,12 +175,9 @@ font-size: 14px;
 font-weight: 500;
 transition: all 0.2s;
 }
-
 .nav-item:hover  { background: rgba(255,255,255,0.1); color: white; }
 .nav-item.active { background: rgba(255,255,255,0.15); color: white; border-right: 3px solid #4a9eff; }
-
 .sidebar-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
-
 .btn-logout {
 width: 100%;
 padding: 10px;
@@ -190,6 +193,5 @@ gap: 8px;
 font-size: 14px;
 transition: all 0.2s;
 }
-
 .btn-logout:hover { background: rgba(255,0,0,0.2); color: white; }
 </style>

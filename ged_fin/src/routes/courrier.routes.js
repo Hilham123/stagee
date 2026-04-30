@@ -1,29 +1,102 @@
-const express = require('express');
-const router  = express.Router();
+const express            = require('express');
+const router             = express.Router();
 const courrierController = require('../controllers/courrier.controller');
+const upload             = require('../config/multer.config');
 const { authenticate }   = require('../middlewares/auth.middleware');
-const { isAdmin, isManager, isEmployee, isViewer } = require('../middlewares/role.middleware');
+const { hasPermission }  = require('../middlewares/role.middleware');
 
-// ROUTES COURRIERS
-// Statistiques
-router.get('/stats',     authenticate, isViewer,   courrierController.getStats);
 
-// Lister les courriers (tout le monde)
-router.get('/',          authenticate, isViewer,   courrierController.listCourriers);
+// STATISTIQUES
+router.get('/stats',
+authenticate,
+hasPermission('courrier.stats'),
+courrierController.getStats
+);
 
-// Récupérer un courrier
-router.get('/:id',       authenticate, isViewer,   courrierController.getCourrier);
+// LISTER LES COURRIERS
+router.get('/',
+authenticate,
+hasPermission('courrier.interne.access'),
+courrierController.listCourriers
+);
 
-// Créer un courrier (EMPLOYEE+)
-router.post('/',         authenticate, isEmployee, courrierController.createCourrier);
+// CRÉER UN COURRIER — avec ou sans fichier
+router.post('/'
+  ,authenticate
+  ,hasPermission('courrier.create')
+  ,upload.single('fichier') // ← accepte le champ "fichier"
+  ,courrierController.createCourrier
+);
 
-// Mettre à jour un courrier (MANAGER+)
-router.put('/:id',       authenticate, isManager,  courrierController.updateCourrier);
 
-// Changer le statut (MANAGER+)
-router.put('/:id/statut', authenticate, isManager, courrierController.changeStatut);
+// RÉCUPÉRER UN COURRIER
+router.get('/:id',
+authenticate,
+hasPermission('courrier.interne.access'),
+courrierController.getCourrier
+);
 
-// Supprimer un courrier (ADMIN)
-router.delete('/:id',    authenticate, isAdmin,    courrierController.deleteCourrier);
+// HISTORIQUE — doit être AVANT /:id mais après /stats
+router.get('/:id/historique',
+authenticate,
+hasPermission('courrier.interne.access'),
+courrierController.getHistorique
+);
+
+// METTRE À JOUR
+router.put('/:id',
+authenticate,
+hasPermission('courrier.update'),
+courrierController.updateCourrier
+);
+
+// CHANGER LE STATUT
+router.put('/:id/statut',
+authenticate,
+hasPermission('courrier.statut.change'),
+courrierController.changeStatut
+);
+
+// DISPATCH
+router.put('/:id/dispatch',
+authenticate,
+hasPermission('courrier.externe.access'),
+courrierController.dispatch
+);
+
+// SOUMETTRE POUR APPROBATION
+router.put('/:id/approbation',
+authenticate,
+hasPermission('courrier.statut.change'),
+courrierController.soumettreApprobation
+);
+
+// APPROUVER
+router.put('/:id/approuver',
+authenticate,
+hasPermission('courrier.statut.change'),
+courrierController.approuver
+);
+
+// SIGNER
+router.put('/:id/signer',
+authenticate,
+hasPermission('courrier.statut.change'),
+courrierController.signerCourrier
+);
+
+// CRÉER UNE RÉPONSE
+router.post('/:id/reponse',
+authenticate,
+hasPermission('courrier.create'),
+courrierController.creerReponse
+);
+
+// SUPPRIMER
+router.delete('/:id',
+authenticate,
+hasPermission('courrier.delete'),
+courrierController.deleteCourrier
+);
 
 module.exports = router;

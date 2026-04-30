@@ -24,33 +24,33 @@
 </thead>
 <tbody>
 <tr v-if="approvedDocs.length === 0">
-    <td colspan="5" style="text-align:center; color:#999">Aucun document approuvé à signer</td>
+<td colspan="5" style="text-align:center; color:#999">Aucun document approuvé à signer</td>
 </tr>
 <tr v-for="doc in approvedDocs" :key="doc.id">
-    <td><strong class="clickable" @click="openDocPreview(doc)">{{ doc.title }}</strong></td>
-    <td>{{ doc.category || '-' }}</td>
-    <td>
-    <span :class="`badge badge-${doc.status?.toLowerCase()}`">{{ doc.status }}</span>
-    </td>
-    <td>
-    <CheckCircle v-if="doc.isSigned"  :size="18" color="#16a34a" />
-    <XCircle     v-else                :size="18" color="#dc2626" />
-    </td>
-    <td>
-    <div class="actions">
-        <button class="btn-action" @click="openDocPreview(doc)" title="Prévisualiser">
-        <Eye :size="15" />
-        </button>
-        <button v-if="!doc.isSigned"
-        class="btn-action btn-submit" @click="signDocument(doc)" title="Signer">
-        <PenLine :size="15" />
-        </button>
-        <button v-if="doc.isSigned"
-        class="btn-action btn-info" @click="viewSignatures(doc)" title="Voir signatures">
-        <ShieldCheck :size="15" />
-        </button>
-    </div>
-    </td>
+<td><strong class="clickable" @click="openDocPreview(doc)">{{ doc.title }}</strong></td>
+<td>{{ doc.category || '-' }}</td>
+<td>
+<span :class="`badge badge-${doc.status?.toLowerCase()}`">{{ doc.status }}</span>
+</td>
+<td>
+<CheckCircle v-if="doc.isSigned"  :size="18" color="#16a34a" />
+<XCircle     v-else                :size="18" color="#dc2626" />
+</td>
+<td>
+<div class="actions">
+    <button class="btn-action" @click="openDocPreview(doc)" title="Prévisualiser">
+    <Eye :size="15" />
+    </button>
+    <button v-if="!doc.isSigned"
+    class="btn-action btn-submit" @click="signDocument(doc)" title="Signer">
+    <PenLine :size="15" />
+    </button>
+    <button v-if="doc.isSigned"
+    class="btn-action btn-info" @click="viewSignatures(doc)" title="Voir signatures">
+    <ShieldCheck :size="15" />
+    </button>
+</div>
+</td>
 </tr>
 </tbody>
 </table>
@@ -70,34 +70,34 @@
 </thead>
 <tbody>
 <tr v-if="signatures.length === 0">
-    <td colspan="6" style="text-align:center; color:#999">Aucune signature trouvée</td>
+<td colspan="6" style="text-align:center; color:#999">Aucune signature trouvée</td>
 </tr>
 <tr v-for="sig in signatures" :key="sig.id">
-    <td>
-    <strong class="clickable" @click="openSigPreview(sig)">
-        {{ sig.metadata?.documentTitle || '-' }}
-    </strong>
-    </td>
-    <td>{{ sig.metadata?.signerName || '-' }}</td>
-    <td>{{ sig.algorithm }}</td>
-    <td>
-    <span :class="`badge ${getSignBadge(sig.status)}`">{{ sig.status }}</span>
-    </td>
-    <td>{{ formatDate(sig.signedAt) }}</td>
-    <td>
-    <div class="actions">
-        <button class="btn-action" @click="openSigPreview(sig)" title="Prévisualiser">
-        <Eye :size="15" />
-        </button>
-        <button class="btn-action btn-info" @click="verifySignature(sig)" title="Vérifier">
-        <ShieldCheck :size="15" />
-        </button>
-        <button v-if="authStore.isAdmin && sig.status === 'VALIDE'"
-        class="btn-action btn-danger" @click="openRevoke(sig)" title="Révoquer">
-        <ShieldOff :size="15" />
-        </button>
-    </div>
-    </td>
+<td>
+<strong class="clickable" @click="openSigPreview(sig)">
+    {{ sig.metadata?.documentTitle || '-' }}
+</strong>
+</td>
+<td>{{ sig.metadata?.signerName || '-' }}</td>
+<td>{{ sig.algorithm }}</td>
+<td>
+<span :class="`badge ${getSignBadge(sig.status)}`">{{ sig.status }}</span>
+</td>
+<td>{{ formatDate(sig.signedAt) }}</td>
+<td>
+<div class="actions">
+    <button class="btn-action" @click="openSigPreview(sig)" title="Prévisualiser">
+    <Eye :size="15" />
+    </button>
+    <button class="btn-action btn-info" @click="verifySignature(sig)" title="Vérifier">
+    <ShieldCheck :size="15" />
+    </button>
+    <button v-if="authStore.isAdmin && sig.status === 'VALIDE'"
+    class="btn-action btn-danger" @click="openRevoke(sig)" title="Révoquer">
+    <ShieldOff :size="15" />
+    </button>
+</div>
+</td>
 </tr>
 </tbody>
 </table>
@@ -347,10 +347,13 @@ loadingPdf.value = false
 }
 
 const handleSign = async (signatureOptions) => {
+console.log('SignatureOptions reçues:', signatureOptions)
+console.log('signatureImage présent:', !!signatureOptions.signatureImage)
+console.log('signatureType:', signatureOptions.signatureType)
 try {
 const res = await api().post('/signatures/sign', {
-documentId: docToSign.value.id,
-...signatureOptions
+    documentId: docToSign.value.id,
+    ...signatureOptions
 })
 const sig = res.data.data
 showSignPadModal.value = false

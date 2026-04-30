@@ -6,7 +6,7 @@
     <div class="login-header">
     <div class="logo"></div>
     <h1>IT-GED</h1>
-    <p>Connectez-vous pour accéder à votre espace de gestion documentaire</p>
+    <p>Connectez-vous pour accéder à votre espace de gestion documentaire et de courrier électronique</p>
     </div>
 
     <!-- Formulaire -->
@@ -46,16 +46,6 @@
     </button>
 
     </form>
-
-    <!-- Infos rôles pour les tests -->
-
-    <div class="test-accounts">
-    <p>Comptes de test :</p>
-    <span @click="fillAccount('admin@ged.com', 'Admin1234!')">Admin</span>
-    <span @click="fillAccount('hicham@ged.com', '1234!')">Manager</span>
-    <span @click="fillAccount('employee@ged.com', 'Employee1234!')">Employee</span>
-    <span @click="fillAccount('viewer@ged.com', 'Viewer1234!')">Viewer</span>
-    </div>
 
 </div>
 </div>

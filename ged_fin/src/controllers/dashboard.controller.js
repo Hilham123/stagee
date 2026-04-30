@@ -2,7 +2,7 @@ const { User, Document, Workflow, Signature, Courrier } = require('../models');
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/database');
 
-// ── Helper: documents par mois ──────────────────────────────
+//Helper: documents par mois 
 const getMonthlyDocuments = async (whereClause = {}) => {
   const rows = await Document.findAll({
     attributes: [
@@ -21,7 +21,7 @@ const getMonthlyDocuments = async (whereClause = {}) => {
   return result
 }
 
-// ── Helper: courriers par mois ──────────────────────────────
+//Helper: courriers par mois 
 const getMonthlyCourriers = async (whereClause = {}) => {
   try {
     const rows = await Courrier.findAll({
@@ -42,7 +42,7 @@ const getMonthlyCourriers = async (whereClause = {}) => {
   } catch { return {} }
 }
 
-// ── Helper: répartition par catégorie ───────────────────────
+//Helper: répartition par catégorie 
 const getCategoryStats = async (whereClause = {}) => {
   const rows = await Document.findAll({
     attributes: [
@@ -60,7 +60,7 @@ const getCategoryStats = async (whereClause = {}) => {
 
 const dashboardController = {
 
-  // ── ADMIN ──────────────────────────────────────────────────
+  //ADMIN
   async getAdminStats(req, res) {
     try {
       const totalUsers    = await User.count();
@@ -116,7 +116,7 @@ const dashboardController = {
     }
   },
 
-  // ── MANAGER ───────────────────────────────────────────────
+  //MANAGER 
   async getManagerStats(req, res) {
     try {
       const managerId = req.user.id;
@@ -154,7 +154,7 @@ const dashboardController = {
     }
   },
 
-  // ── EMPLOYEE ──────────────────────────────────────────────
+  //EMPLOYEE 
   async getEmployeeStats(req, res) {
     try {
       const userId = req.user.id;
@@ -193,7 +193,7 @@ const dashboardController = {
     }
   },
 
-  // ── VIEWER ────────────────────────────────────────────────
+  //VIEWER
   async getViewerStats(req, res) {
     try {
       const totalDocuments = await Document.count();
@@ -225,7 +225,7 @@ const dashboardController = {
     }
   },
 
-  // ── AUTO (selon rôle) ─────────────────────────────────────
+  //AUTO
   async getDashboard(req, res) {
     switch (req.user.role) {
       case 'ADMIN':   return dashboardController.getAdminStats(req, res);

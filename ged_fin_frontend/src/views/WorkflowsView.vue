@@ -92,7 +92,7 @@
                     <ThumbsDown :size="15" />
                   </button>
                   <button
-                    v-if="authStore.isAdmin && wf.currentStep === 'APPROUVE'"
+                    v-if="(authStore.isAdmin || authStore.isManager) && wf.currentStep === 'APPROUVE'"
                     class="btn-action btn-archive"
                     @click="archiveWorkflow(wf)" title="Archiver">
                     <Archive :size="15" />
@@ -234,9 +234,7 @@ import { workflowService } from '../services/api'
 import SidebarNav      from '../components/SidebarNav.vue'
 import BaseModal       from '../components/BaseModal.vue'
 import DocumentPreview from '../components/DocumentPreview.vue'
-import {
-  GitBranch, Loader, RotateCcw, UserCheck, Eye, FileText, Info,
-  ThumbsUp, ThumbsDown, Archive, Check, X
+import {GitBranch, Loader, RotateCcw, UserCheck, Eye, FileText, Info,ThumbsUp, ThumbsDown, Archive, Check, X
 } from 'lucide-vue-next'
 
 const authStore = useAuthStore()

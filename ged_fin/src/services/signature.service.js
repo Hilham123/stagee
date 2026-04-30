@@ -47,27 +47,44 @@ return buf;
 
 // EMBARQUER LA SIGNATURE DANS LE PDF
 async embedSignatureInPdf(pdfBytes, signatureData) {
+// Au début de embedSignatureInPdf
+console.log('embedSignatureInPdf appelé avec:', {
+signatureType: signatureData.signatureType,
+signatureText: signatureData.signatureText,
+hasSignatureImage: !!signatureData.signatureImage,
+x: signatureData.x,
+y: signatureData.y,
+pageIndex: signatureData.pageIndex,
+});
 try {
 const pdfDoc   = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
 const pages    = pdfDoc.getPages();
 const font     = await pdfDoc.embedFont(StandardFonts.Helvetica);
 const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-const { x, y, pageIndex = pages.length - 1, signerName, signerRole, signedAt, signatureText, signatureType } = signatureData;
+const {
+x, y, pageIndex = pages.length - 1,
+signerName, signerRole, signedAt,
+signatureText, signatureType, signatureImage
+} = signatureData;
+
 const page      = pages[Math.min(pageIndex, pages.length - 1)];
 const { width } = page.getSize();
 
 const boxW = 280;
-const boxH = 110;
+const boxH = 120;
 const posX = x !== undefined ? x : width - boxW - 30;
 const posY = y !== undefined ? y : 40;
 
+// Fond et bordure
 page.drawRectangle({
 x: posX, y: posY, width: boxW, height: boxH,
 color: rgb(0.97, 0.98, 1),
 borderColor: rgb(0.15, 0.23, 0.36),
 borderWidth: 1.5,
 });
+
+// Bandeau titre
 page.drawRectangle({
 x: posX, y: posY + boxH - 22, width: boxW, height: 22,
 color: rgb(0.15, 0.23, 0.36),
@@ -76,34 +93,58 @@ page.drawText('SIGNATURE ELECTRONIQUE', {
 x: posX + 10, y: posY + boxH - 16,
 size: 9, font: boldFont, color: rgb(1, 1, 1),
 });
-if (signatureText) {
-page.drawText(signatureText.substring(0, 30), {
-    x: posX + 10, y: posY + boxH - 44,
-    size: signatureType === 'draw' ? 18 : 14,
-    font: signatureType === 'draw' ? font : boldFont,
-    color: rgb(0.1, 0.2, 0.6),
-});
+
+if (signatureImage && signatureType === 'draw') {
+try {
+// Extraire le base64 pur (enlever le préfixe data:image/png;base64,)
+const base64Data = signatureImage.includes(',')
+    ? signatureImage.split(',')[1]
+    : signatureImage
+const imgBytes  = Buffer.from(base64Data, 'base64')
+const pngImage  = await pdfDoc.embedPng(imgBytes)
+const imgDims   = pngImage.scaleToFit(200, 40)
+page.drawImage(pngImage, {
+    x:      posX + 10,
+    y:      posY + boxH - 66,
+    width:  imgDims.width,
+    height: imgDims.height,
+})
+} catch (imgErr) {
+console.warn('Impossible d\'intégrer l\'image de signature:', imgErr.message)
+// Fallback : afficher le nom en texte
+page.drawText(signerName, {
+    x: posX + 10, y: posY + boxH - 50,
+    size: 16, font: boldFont, color: rgb(0.1, 0.2, 0.6),
+})
 }
+} else {
+//  Afficher le texte si signature texte
+const displayText = signatureText || signerName
+page.drawText(displayText.substring(0, 30), {
+x: posX + 10, y: posY + boxH - 50,
+size: 16, font: boldFont, color: rgb(0.1, 0.2, 0.6),
+})
+}
+
+// Ligne séparatrice
 page.drawLine({
-start: { x: posX + 10, y: posY + boxH - 52 },
-end:   { x: posX + boxW - 10, y: posY + boxH - 52 },
+start: { x: posX + 10, y: posY + boxH - 70 },
+end:   { x: posX + boxW - 10, y: posY + boxH - 70 },
 thickness: 0.5, color: rgb(0.8, 0.85, 0.9),
 });
+
+// Infos signataire
 page.drawText(`Signe par : ${signerName}`, {
-x: posX + 10, y: posY + boxH - 66,
+x: posX + 10, y: posY + boxH - 82,
 size: 8, font: boldFont, color: rgb(0.15, 0.23, 0.36),
 });
 page.drawText(`Role : ${signerRole || '-'}`, {
-x: posX + 10, y: posY + boxH - 78,
+x: posX + 10, y: posY + boxH - 94,
 size: 7.5, font, color: rgb(0.3, 0.3, 0.3),
 });
 page.drawText(`Date : ${new Date(signedAt).toLocaleString('fr-FR')}`, {
-x: posX + 10, y: posY + boxH - 90,
+x: posX + 10, y: posY + boxH - 106,
 size: 7.5, font, color: rgb(0.3, 0.3, 0.3),
-});
-page.drawText('Algorithme : SHA-256', {
-x: posX + 10, y: posY + boxH - 102,
-size: 7, font, color: rgb(0.5, 0.5, 0.5),
 });
 
 return await pdfDoc.save();
@@ -142,25 +183,26 @@ console.log('PDF après décompression - taille:', pdfBytes.length);
 
 // Vérifier que c'est bien un PDF
 if (pdfBytes[0] === 37 && pdfBytes[1] === 80) {
-    const signedPdfBytes = await this.embedSignatureInPdf(pdfBytes, {
-    x:             signatureOptions.x,
-    y:             signatureOptions.y,
-    pageIndex:     signatureOptions.pageIndex,
-    signerName:    `${signer.firstName} ${signer.lastName}`,
-    signerRole:    signer.roleName || 'N/A',
-    signedAt:      timestamp,
-    signatureText: signatureOptions.signatureText || `${signer.firstName} ${signer.lastName}`,
-    signatureType: signatureOptions.signatureType || 'text',
-    });
+const signedPdfBytes = await this.embedSignatureInPdf(pdfBytes, {
+x:             signatureOptions.x,
+y:             signatureOptions.y,
+pageIndex:     signatureOptions.pageIndex,
+signerName:    `${signer.firstName} ${signer.lastName}`,
+signerRole:    signer.roleName || 'N/A',
+signedAt:      timestamp,
+signatureText: signatureOptions.signatureText || `${signer.firstName} ${signer.lastName}`,
+signatureType: signatureOptions.signatureType || 'text',
+signatureImage: signatureOptions.signatureImage || null, 
+});
 
-    await alfrescoService.updateDocumentContent(
-    document.alfrescoNodeId,
-    Buffer.from(signedPdfBytes),
-    'application/pdf'
-    );
-    console.log('✅ Signature embarquée dans le PDF avec succès');
+await alfrescoService.updateDocumentContent(
+document.alfrescoNodeId,
+Buffer.from(signedPdfBytes),
+'application/pdf'
+);
+console.log(' Signature embarquée dans le PDF avec succès');
 } else {
-    console.warn('⚠️ Les données ne sont pas un PDF valide — signature non embarquée');
+console.warn(' Les données ne sont pas un PDF valide — signature non embarquée');
 }
 } catch (e) {
 console.warn('Impossible d\'embarquer la signature PDF:', e.message);

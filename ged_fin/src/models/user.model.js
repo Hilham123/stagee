@@ -34,12 +34,19 @@ allowNull: true,
 field: 'role_id',
 references: { model: 'roles', key: 'id' },
 },
-// On garde role string pour compatibilité temporaire
+// Garde role string pour compatibilité temporaire
 roleName: {
 type: DataTypes.STRING(50),
 allowNull: true,
 field: 'role_name',
 },
+serviceId: {
+type: DataTypes.UUID,
+allowNull: true,
+field: 'service_id',
+references: { model: 'services', key: 'id' },
+},
+
 department: {
 type: DataTypes.STRING(100),
 allowNull: true,
@@ -48,6 +55,21 @@ isActive: {
 type: DataTypes.BOOLEAN,
 defaultValue: true,
 field: 'is_active',
+},
+savedSignatureImage: {
+type: DataTypes.TEXT,
+allowNull: true,
+field: 'saved_signature_image',
+},
+savedSignatureText: {
+type: DataTypes.STRING(100),
+allowNull: true,
+field: 'saved_signature_text',
+},
+savedSignatureFont: {
+type: DataTypes.STRING(100),
+allowNull: true,
+field: 'saved_signature_font',
 },
 lastLogin: {
 type: DataTypes.DATE,
@@ -60,14 +82,14 @@ timestamps: true,
 underscored: true,
 hooks: {
 beforeCreate: async (user) => {
-    if (user.password && !user.password.startsWith('$2')) {
-    user.password = await bcrypt.hash(user.password, 12);
-    }
+if (user.password && !user.password.startsWith('$2')) {
+user.password = await bcrypt.hash(user.password, 12);
+}
 },
 beforeUpdate: async (user) => {
-    if (user.changed('password') && !user.password.startsWith('$2')) {
-    user.password = await bcrypt.hash(user.password, 12);
-    }
+if (user.changed('password') && !user.password.startsWith('$2')) {
+user.password = await bcrypt.hash(user.password, 12);
+}
 },
 },
 });
@@ -80,15 +102,19 @@ User.prototype.toSafeJSON = function () {
 const values = { ...this.get() };
 delete values.password;
 
-// Récupère roleName depuis l'association userRole si disponible
 if (this.userRole) {
-values.roleName = this.userRole.name;
-values.roleLabel = this.userRole.label;
-values.roleColor = this.userRole.color;
+values.roleName    = this.userRole.name;
+values.roleLabel   = this.userRole.label;
+values.roleColor   = this.userRole.color;
 values.permissions = this.userRole.permissions;
+}
+if (this.service) {
+values.serviceCode = this.service.code;
+values.serviceNom  = this.service.nom;
 }
 
 values.role = values.roleName || 'VIEWER';
 return values;
 };
+
 module.exports = User;

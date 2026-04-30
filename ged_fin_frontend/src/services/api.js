@@ -21,10 +21,10 @@ api.interceptors.response.use(
 (response) => response,
 (error) => {
 if (error.response?.status === 401) {
-    // Token expiré → déconnexion automatique
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    window.location.href = '/login'
+// Token expiré → déconnexion automatique
+localStorage.removeItem('token')
+localStorage.removeItem('user')
+window.location.href = '/login'
 }
 return Promise.reject(error)
 }
@@ -37,7 +37,6 @@ getMe:          ()     => api.get('/auth/me'),
 changePassword: (data) => api.put('/auth/change-password', data),
 }
 
-// SERVICES COURRIERS
 export const courrierService = {
 list:        (params)     => api.get('/courriers', { params }),
 get:         (id)         => api.get(`/courriers/${id}`),
@@ -45,7 +44,19 @@ create:      (data)       => api.post('/courriers', data),
 update:      (id, data)   => api.put(`/courriers/${id}`, data),
 changeStatut:(id, statut) => api.put(`/courriers/${id}/statut`, { statut }),
 delete:      (id)         => api.delete(`/courriers/${id}`),
-stats:       ()           => api.get('/courriers/stats'),
+stats:       (params) => api.get('/courriers/stats', { params }),
+dispatch:           (id, data) => api.put(`/courriers/${id}/dispatch`, data),
+approbation:        (id)       => api.put(`/courriers/${id}/approbation`),
+approuver:          (id)       => api.put(`/courriers/${id}/approuver`),
+creerReponse:       (id, data) => api.post(`/courriers/${id}/reponse`, data),
+getHistorique:      (id)       => api.get(`/courriers/${id}/historique`),
+signerCourrier:     (id, data) => api.put(`/courriers/${id}/signer`, data),
+}
+
+
+//  Ajouter le service pour les services
+export const serviceService = {
+getAll: () => api.get('/services'),
 }
 
 // SERVICES DOCUMENTS
