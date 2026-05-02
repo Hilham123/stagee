@@ -197,27 +197,68 @@ const offset = (page - 1) * limit;
 const where = {};
 if (filters.etapeCircuit) where.etapeCircuit = filters.etapeCircuit;
 if (filters.assigneA)     where.assigneA     = filters.assigneA;
-if (user.role !== 'ADMIN') {
-where[Op.or] = [
-{ serviceDestinataireId: user.serviceId },
-{ serviceExpediteurId:   user.serviceId },
-{ createdBy:             user.id },
-{ assigneA:              user.id },
-];
+
+// ✅ Filtrer par rôle et service - CORRECT
+const roleFilters = [];
+
+if (user.role !== 'ADMIN' && user.roleName !== 'ADMIN') {
+  const isServiceAdmin = user.serviceCode === 'SERVICE_ADMINISTRATIF'
+  const isDirecteur    = user.isDirecteur
+
+  if (isServiceAdmin || isDirecteur) {
+    // Service admin et Directeur : EXTERNE + leur service + archives
+    roleFilters.push(
+      { nature: 'EXTERNE' },  // Courriers externes
+      { [Op.and]: [{ nature: 'INTERNE' }, { [Op.or]: [
+        { serviceDestinataireId: user.serviceId },
+        { serviceExpediteurId:   user.serviceId }
+      ]}]},
+      { statut: 'ARCHIVE' }  // Archives accessibles
+    )
+  } else if (user.serviceId) {
+    // Manager normal et Employee : UNIQUEMENT leur service + créés par eux + archives
+    roleFilters.push(
+      { [Op.and]: [{ nature: 'INTERNE' }, { serviceDestinataireId: user.serviceId }]},
+      { [Op.and]: [{ nature: 'INTERNE' }, { serviceExpediteurId: user.serviceId }]},
+      { createdBy: user.id },
+      { destinataireTous: true },
+      { statut: 'ARCHIVE' }  // Archives accessibles
+    )
+  } else {
+    // Pas de service : voir ses propres courriers + archives
+    roleFilters.push(
+      { createdBy: user.id },
+      { destinataireTous: true },
+      { statut: 'ARCHIVE' }
+    )
+  }
 }
+
+// ✅ Combiner le filtrage par rôle avec la recherche
+if (search) {
+  const searchFilters = [
+    { objet:        { [Op.iLike]: `%${search}%` } },
+    { expediteur:   { [Op.iLike]: `%${search}%` } },
+    { destinataire: { [Op.iLike]: `%${search}%` } },
+    { reference:    { [Op.iLike]: `%${search}%` } },
+  ]
+  
+  if (roleFilters.length > 0) {
+    where[Op.and] = [
+      { [Op.or]: roleFilters },
+      { [Op.or]: searchFilters }
+    ]
+  } else {
+    where[Op.or] = searchFilters
+  }
+} else if (roleFilters.length > 0) {
+  where[Op.or] = roleFilters
+}
+
 if (type)     where.type     = type;
 if (statut)   where.statut   = statut;
 if (priorite) where.priorite = priorite;
-if (nature) where.nature = nature;             
-
-if (search) {
-where[Op.or] = [
-{ objet:        { [Op.iLike]: `%${search}%` } },
-{ expediteur:   { [Op.iLike]: `%${search}%` } },
-{ destinataire: { [Op.iLike]: `%${search}%` } },
-{ reference:    { [Op.iLike]: `%${search}%` } },
-];
-}
+if (nature)   where.nature   = nature;
 
 const { rows: courriers, count } = await Courrier.findAndCountAll({
 where,
@@ -348,6 +389,33 @@ id, userId, 'CHANGEMENT_STATUT',
 
 return courrier;
 },
+
+// ARCHIVER UN COURRIER
+async archiveCourrier(id, userId) {
+const courrier = await Courrier.findByPk(id);
+if (!courrier) throw new Error('Courrier introuvable.');
+
+const transitionsAutorisees = TRANSITIONS_AUTORISEES[courrier.statut];
+if (!transitionsAutorisees.includes('ARCHIVE')) {
+throw new Error(
+`Ce courrier ne peut pas être archivé depuis le statut ${courrier.statut}. ` +
+`Statuts archivables : ${Object.keys(TRANSITIONS_AUTORISEES).filter(s => TRANSITIONS_AUTORISEES[s].includes('ARCHIVE')).join(', ')}`
+);
+}
+
+await courrier.update({ 
+statut: 'ARCHIVE',
+archivedAt: new Date(),
+});
+
+await this.ajouterHistorique(
+id, userId, 'ARCHIVAGE',
+`Courrier archivé`
+);
+
+return courrier;
+},
+
 //SUPPRIMER UN COURRIER
 async deleteCourrier(id) {
 const courrier = await Courrier.findByPk(id);

@@ -149,12 +149,19 @@ async takeCharge(workflowId, managerId) {
 
   // RÉCUPÉRER LES WORKFLOWS
   async getWorkflows(filters = {}) {
-    const { currentStep, assignedTo, submittedBy } = filters;
-
-    const where = {};
-    if (currentStep) where.currentStep = currentStep;
-    if (assignedTo)  where.assignedTo  = assignedTo;
-    if (submittedBy) where.submittedBy = submittedBy;
+    // Accepter soit un objet `where` complexe, soit des filtres simples
+    let where = {};
+    
+    if (filters.where) {
+      // Si on reçoit un objet `where` complexe (avec Op.or, Op.and, etc.)
+      where = filters.where;
+    } else {
+      // Sinon utiliser les filtres simples (ancienne méthode)
+      const { currentStep, assignedTo, submittedBy } = filters;
+      if (currentStep) where.currentStep = currentStep;
+      if (assignedTo)  where.assignedTo  = assignedTo;
+      if (submittedBy) where.submittedBy = submittedBy;
+    }
 
     const workflows = await Workflow.findAll({
     where,

@@ -1,4 +1,5 @@
 const workflowService = require('../services/workflow.service');
+const { Op } = require('sequelize');
 
 const workflowController = {
   // SOUMETTRE UN DOCUMENT
@@ -125,18 +126,32 @@ const workflowController = {
     try {
       const { currentStep } = req.query;
 
-      // Filtrer selon le rôle
-      const filters = {};
-      if (currentStep) filters.currentStep = currentStep;
-
-      if (req.user.role === 'EMPLOYEE') {
-        // Un employé ne voit que ses propres soumissions
-        filters.submittedBy = req.user.id;
-      } else if (req.user.role === 'MANAGER') {
-        // Un manager voit les workflows qui lui sont assignés
-        filters.assignedTo = req.user.id;
+      // Construire les filtres selon le rôle
+      let filters = {};
+      
+      if (currentStep) {
+        filters.where = { currentStep };
+      } else {
+        filters.where = {};
       }
-      // ADMIN voit tout
+
+      // ✅ Appliquer les filtres par rôle
+      if (req.user.role === 'EMPLOYEE' || req.user.roleName === 'EMPLOYEE') {
+        // Un employé voit ses soumissions + archives
+        filters.where[Op.or] = [
+          { submittedBy: req.user.id },
+          { currentStep: 'ARCHIVE' }
+        ];
+      } else if (req.user.role === 'MANAGER' || req.user.roleName === 'MANAGER') {
+        // Un manager voit ses assignations + ses soumissions + archives
+        filters.where[Op.or] = [
+          { assignedTo: req.user.id },
+          { submittedBy: req.user.id },
+          { currentStep: 'ARCHIVE' }
+        ];
+      }
+      // ADMIN voit tout (pas de filtre)
+      
       const workflows = await workflowService.getWorkflows(filters);
 
       res.json({

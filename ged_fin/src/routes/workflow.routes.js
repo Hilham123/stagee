@@ -22,8 +22,7 @@ router.put('/:id/approve',          authenticate, isManager,  workflowController
 
 // Rejeter un document (MANAGER+)
 router.put('/:id/reject',           authenticate, isManager,  workflowController.rejectDocument);
-
-// Archiver un document (ADMIN uniquement)
-router.put('/:id/archive',          authenticate, isAdmin,    workflowController.archiveDocument);
+// Archiver un document (MANAGER+)
+router.put('/:id/archive', authenticate, isManager, workflowController.archiveDocument);
 
 module.exports = router;

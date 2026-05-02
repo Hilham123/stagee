@@ -1,5 +1,5 @@
 const jwt    = require('jsonwebtoken');
-const { User, Role, Service } = require('../models'); // ✅ ajouter Service
+const { User, Role, Service } = require('../models'); 
 
 const authenticate = async (req, res, next) => {
   try {
@@ -14,7 +14,7 @@ const authenticate = async (req, res, next) => {
     const user = await User.findByPk(decoded.id, {
       include: [
         { model: Role,    as: 'userRole' },
-        { model: Service, as: 'service' } // ✅ charger le service
+        { model: Service, as: 'service' } 
       ]
     });
 
@@ -31,12 +31,13 @@ const authenticate = async (req, res, next) => {
       safeUser.permissions = user.userRole.permissions;
     }
 
-    // ✅ Exposer les infos du service dans req.user
     if (user.service) {
       safeUser.serviceId   = user.service.id;
       safeUser.serviceCode = user.service.code;
       safeUser.serviceNom  = user.service.nom;
     }
+
+    safeUser.isDirecteur = user.isDirecteur || false;
 
     req.user = safeUser;
     next();

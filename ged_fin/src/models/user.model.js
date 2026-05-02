@@ -56,6 +56,11 @@ type: DataTypes.BOOLEAN,
 defaultValue: true,
 field: 'is_active',
 },
+isDirecteur: {
+type: DataTypes.BOOLEAN,
+defaultValue: false,
+field: 'is_directeur',
+},
 savedSignatureImage: {
 type: DataTypes.TEXT,
 allowNull: true,

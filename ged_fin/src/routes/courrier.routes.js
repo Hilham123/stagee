@@ -85,6 +85,13 @@ hasPermission('courrier.statut.change'),
 courrierController.signerCourrier
 );
 
+// ARCHIVER
+router.put('/:id/archive',
+authenticate,
+hasPermission('courrier.archive'),
+courrierController.archiveCourrier
+);
+
 // CRÉER UNE RÉPONSE
 router.post('/:id/reponse',
 authenticate,

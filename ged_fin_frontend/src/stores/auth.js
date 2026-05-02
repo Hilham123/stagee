@@ -38,7 +38,7 @@ export const useAuthStore = defineStore('auth', {
       !!state.user?.permissions?.['courrier.update'],
 
     canChangeStatutCourrier: (state) =>
-      (state.user?.roleName || state.user?.role) === 'ADMIN' ||
+      ['ADMIN', 'MANAGER'].includes(state.user?.roleName || state.user?.role) ||
       !!state.user?.permissions?.['courrier.statut.change'],
 
     canDeleteCourrier: (state) =>

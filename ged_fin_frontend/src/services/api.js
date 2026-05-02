@@ -5,6 +5,7 @@ baseURL: 'http://localhost:3000/api',
 timeout: 30000,
 headers: { 'Content-Type': 'application/json' },
 })
+updateRetention: (id, retentionYears) => api.put(`/documents/${id}/retention`, { retentionYears }),
 
 //ajoute le token JWT
 api.interceptors.request.use((config) => {

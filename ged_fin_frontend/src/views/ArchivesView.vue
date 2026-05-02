@@ -135,6 +135,9 @@
                 <div class="actions">
                   <button class="btn-action" @click="openDetail(doc)" title="Voir"><Eye :size="15" /></button>
                   <button class="btn-action" @click="downloadDoc(doc)" title="Télécharger"><Download :size="15" /></button>
+                  <button class="btn-action btn-retention" @click="openRetention(doc)" title="Modifier durée">
+                    <Clock :size="15" />
+                  </button>
                 </div>
               </td>
             </tr>
@@ -374,6 +377,33 @@
     <SignatureCachet :data="cachetData || {}" :signed="true" />
   </BaseModal>
 
+  <!-- Modal Durée de rétention -->
+  <BaseModal :show="showRetentionModal" cancel-text="Annuler" @close="showRetentionModal = false">
+    <template #title>
+      <Clock :size="20" class="title-icon" /> Modifier la durée de conservation
+    </template>
+    <p style="color:#666; margin-bottom:16px">
+      Document : <strong>{{ retentionDoc?.title }}</strong>
+    </p>
+    <div class="form-group">
+      <label>Durée de conservation (en années) *</label>
+      <input
+        v-model.number="newRetentionYears"
+        type="number" min="1" max="99"
+        placeholder="Ex: 5"
+      />
+      <p class="field-hint">
+        Date d'expiration actuelle :
+        <strong>{{ formatDate(getRetentionExpiry(retentionDoc)) }}</strong>
+      </p>
+    </div>
+    <template #actions>
+      <button class="btn btn-primary" @click="handleRetention">
+        <Clock :size="15" /> Confirmer
+      </button>
+    </template>
+  </BaseModal>
+
 </div>
 </template>
 
@@ -479,6 +509,9 @@ const detailFields = [
   { label: 'Expiration',   format: (doc) => formatDate(getRetentionExpiry(doc)) },
 ]
 
+const showRetentionModal = ref(false)
+const retentionDoc       = ref(null)
+const newRetentionYears  = ref(5)
 //Onglet principal 
 const switchMainTab = (tab) => {
   activeMainTab.value = tab
@@ -509,6 +542,26 @@ const loadArchives = async (page = 1) => {
 const resetFilters = () => {
   filters.value = { category: '', signed: '', search: '' }
   loadArchives()
+}
+const openRetention = (doc) => {
+  retentionDoc.value      = doc
+  newRetentionYears.value = doc.retentionYears || 5
+  showRetentionModal.value = true
+}
+
+const handleRetention = async () => {
+  if (!newRetentionYears.value || newRetentionYears.value < 1) {
+    alert('Durée invalide — minimum 1 an')
+    return
+  }
+  try {
+    await api().put(`/documents/${retentionDoc.value.id}/retention`, {
+      retentionYears: parseInt(newRetentionYears.value)
+    })
+    showRetentionModal.value = false
+    loadArchives()
+    alert('Durée de conservation mise à jour !')
+  } catch (e) { alert(e.response?.data?.message || 'Erreur') }
 }
 
 //Chargement courriers archivés
@@ -584,6 +637,8 @@ onMounted(() => {
 })
 </script>
 <style scoped>
+.btn-retention { background: #f0f9ff; color: #0369a1; }
+.field-hint    { font-size: 12px; color: #94a3b8; margin-top: 4px; font-style: italic; }
 .layout { display: flex; min-height: 100vh; }
 .main-content { margin-left: 240px; flex: 1; padding: 32px; background: #f5f7fa; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }

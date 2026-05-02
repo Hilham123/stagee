@@ -36,20 +36,22 @@ defaultValue: {
     canViewAll:      false,
 
     // Permissions courriers
-    // Accès au module courrier externe (réservé service administratif)
-    'courrier.externe':  false,
-    // Accès au module courrier interne (tous les employés)
-    'courrier.interne':  false,
+    // Statistiques courriers
+    'courrier.stats':            false,
+    // Accès au module courrier interne
+    'courrier.interne.access':   false,
     // Créer un courrier
-    'creer.courrier':          false,
+    'courrier.create':           false,
     // Modifier un courrier
-    'Mise a jour.Courrier':          false,
+    'courrier.update':           false,
     // Changer le statut d'un courrier
-    'change.statut.courrier':   false,
-    // Supprimer un courrier (admin uniquement)
-    'Supprimer.courrier':          false,
-    // Voir les statistiques courriers
-    'stat.courrier':           false,
+    'courrier.statut.change':    false,
+    // Accès au module courrier externe
+    'courrier.externe.access':   false,
+    // Supprimer un courrier
+    'courrier.delete':           false,
+    // Archiver un courrier
+    'courrier.archive':          false,
 },
 },
 isSystem: {

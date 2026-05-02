@@ -200,6 +200,15 @@ res.json({ success: true, data: reponse, message: 'Réponse créée avec succès
 } catch (e) { res.status(400).json({ success: false, message: e.message }) }
 },
 
+async archiveCourrier(req, res) {
+try {
+const courrier = await courrierService.archiveCourrier(
+req.params.id, req.user.id
+)
+res.json({ success: true, data: courrier, message: 'Courrier archivé avec succès' })
+} catch (e) { res.status(400).json({ success: false, message: e.message }) }
+},
+
 async getHistorique(req, res) {
 try {
 const historique = await courrierService.getHistorique(req.params.id)

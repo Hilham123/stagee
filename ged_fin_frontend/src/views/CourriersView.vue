@@ -344,6 +344,17 @@
         <input v-model="form.dateEnvoi" type="date" />
       </div>
 
+
+      <div class="form-group" v-if="form.nature === 'INTERNE'">
+  <label class="radio-label">
+    <input type="checkbox" v-model="form.destinataireTous" />
+    <Globe :size="14" /> Envoyer à tous les services
+  </label>
+  <p class="field-hint" v-if="form.destinataireTous">
+    Ce courrier sera visible par tous les services de l'organisation.
+  </p>
+</div>
+
       <div class="form-group">
         <label>Notes</label>
         <textarea v-model="form.notes" rows="2" placeholder="Notes..."></textarea>

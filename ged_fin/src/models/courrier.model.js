@@ -177,11 +177,24 @@ type: DataTypes.JSONB,
 defaultValue: {},
 field: 'metadata',
 },
+destinataireTous: {
+type: DataTypes.BOOLEAN,
+defaultValue: false,
+field: 'destinataire_tous',
+},
+
+// Date d'archivage
+archivedAt: {
+type: DataTypes.DATE,
+allowNull: true,
+field: 'archived_at',
+},
 }, {
 tableName: 'courriers',
 timestamps: true,
 underscored: true,
 }
+
 
 );
 
