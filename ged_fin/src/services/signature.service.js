@@ -47,15 +47,6 @@ return buf;
 
 // EMBARQUER LA SIGNATURE DANS LE PDF
 async embedSignatureInPdf(pdfBytes, signatureData) {
-// Au début de embedSignatureInPdf
-console.log('embedSignatureInPdf appelé avec:', {
-signatureType: signatureData.signatureType,
-signatureText: signatureData.signatureText,
-hasSignatureImage: !!signatureData.signatureImage,
-x: signatureData.x,
-y: signatureData.y,
-pageIndex: signatureData.pageIndex,
-});
 try {
 const pdfDoc   = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
 const pages    = pdfDoc.getPages();

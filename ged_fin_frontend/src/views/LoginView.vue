@@ -4,7 +4,7 @@
 
     <!-- Logo et titre -->
     <div class="login-header">
-    <div class="logo"></div>
+    <img src="/images/logo it.png" alt="Logo IT-GED" class="logo-img" />
     <h1>IT-GED</h1>
     <p>Connectez-vous pour accéder à votre espace de gestion documentaire et de courrier électronique</p>
     </div>
@@ -112,9 +112,11 @@ text-align: center;
 margin-bottom: 32px;
 }
 
-.logo {
-font-size: 48px;
+.logo-img {
+max-height: 100px;
+max-width: 200px;
 margin-bottom: 12px;
+object-fit: contain;
 }
 
 .login-header h1 {

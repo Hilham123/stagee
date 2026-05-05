@@ -118,7 +118,7 @@ values.serviceCode = this.service.code;
 values.serviceNom  = this.service.nom;
 }
 
-values.role = values.roleName || 'VIEWER';
+values.role = values.roleName || 'EMPLOYEE';
 return values;
 };
 

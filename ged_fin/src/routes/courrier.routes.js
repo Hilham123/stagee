@@ -88,7 +88,7 @@ courrierController.signerCourrier
 // ARCHIVER
 router.put('/:id/archive',
 authenticate,
-hasPermission('courrier.archive'),
+hasPermission('courrier.statut.change'),
 courrierController.archiveCourrier
 );
 

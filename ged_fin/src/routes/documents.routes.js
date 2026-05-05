@@ -31,7 +31,10 @@ const upload = multer({
 // Recherche (avant /:id pour éviter les conflits de routing)
 router.get('/search',          authenticate, isViewer,   documentController.searchDocuments);
 
-// Lister tous les documents
+// ✅ Récupérer les archives des documents (uniquement)
+router.get('/archives/list',   authenticate, isViewer,   documentController.getDocumentArchives);
+
+// Lister tous les documents (actifs - SANS archives ni courriers)
 router.get('/',                authenticate, isViewer,   documentController.listDocuments);
 
 // Récupérer un document par son ID

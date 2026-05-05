@@ -125,6 +125,8 @@ const workflowController = {
   async getWorkflows(req, res) {
     try {
       const { currentStep } = req.query;
+      const { User } = require('../models');
+      const { Service } = require('../models');
 
       // Construire les filtres selon le rôle
       let filters = {};
@@ -135,22 +137,46 @@ const workflowController = {
         filters.where = {};
       }
 
+      // Récupérer l'utilisateur complet pour accéder serviceId et isDirecteur
+      const user = await User.findByPk(req.user.id);
+      const userRole = req.user.role || req.user.roleName;
+
       // ✅ Appliquer les filtres par rôle
-      if (req.user.role === 'EMPLOYEE' || req.user.roleName === 'EMPLOYEE') {
-        // Un employé voit ses soumissions + archives
-        filters.where[Op.or] = [
-          { submittedBy: req.user.id },
-          { currentStep: 'ARCHIVE' }
-        ];
-      } else if (req.user.role === 'MANAGER' || req.user.roleName === 'MANAGER') {
-        // Un manager voit ses assignations + ses soumissions + archives
-        filters.where[Op.or] = [
-          { assignedTo: req.user.id },
-          { submittedBy: req.user.id },
-          { currentStep: 'ARCHIVE' }
-        ];
+      // IMPORTANT: Montrer UNIQUEMENT les workflows en cours (EN_ATTENTE ou EN_COURS)
+      // Les workflows Approuvé/Rejeté doivent être archivés pour nettoyer le workflow
+      filters.where.currentStep = { 
+        [Op.in]: ['EN_ATTENTE_VALIDATION', 'EN_COURS_VALIDATION'] 
+      };
+
+      if (userRole === 'EMPLOYEE') {
+        // Un employé voit ses soumissions en cours
+        filters.where.submittedBy = req.user.id;
+      } else if (userRole === 'MANAGER') {
+        if (user?.isDirecteur) {
+          // ✅ Manager directeur voit TOUS les workflows en cours
+          // Pas de filtre supplémentaire
+        } else if (user?.serviceId) {
+          // ✅ Manager normal voit les workflows en cours de son département
+          // Récupérer les IDs des utilisateurs du même service
+          const serviceMembers = await User.findAll({
+            where: { serviceId: user.serviceId },
+            attributes: ['id'],
+          });
+          const memberIds = serviceMembers.map(m => m.id);
+
+          filters.where[Op.or] = [
+            { submittedBy: { [Op.in]: memberIds } },  // workflows soumis par son service
+            { assignedTo: req.user.id }               // assignés à ce manager
+          ];
+        } else {
+          // Manager sans service : ses workflows en cours
+          filters.where[Op.or] = [
+            { assignedTo: req.user.id },
+            { submittedBy: req.user.id }
+          ];
+        }
       }
-      // ADMIN voit tout (pas de filtre)
+      // ✅ ADMIN voit TOUS les workflows en cours (aucun filtre supplémentaire)
       
       const workflows = await workflowService.getWorkflows(filters);
 
@@ -167,19 +193,75 @@ const workflowController = {
   // GET
   async getWorkflow(req, res) {
     try {
-    const workflows = await workflowService.getWorkflows({});
-    const workflow = workflows.find(w => w.id === req.params.id);
+      const workflow = await workflowService.getWorkflowById(req.params.id);
 
-    if (!workflow) {
+      if (!workflow) {
         return res.status(404).json({
-        success: false,
-        message: 'Workflow introuvable.',
+          success: false,
+          message: 'Workflow introuvable.',
         });
-    }
+      }
 
-    res.json({ success: true, data: workflow });
+      res.json({ success: true, data: workflow });
     } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  // RÉCUPÉRER LES ARCHIVES (documents archivés)
+  // GET /archives
+  async getArchives(req, res) {
+    try {
+      const { User } = require('../models');
+      const userRole = req.user.role || req.user.roleName;
+
+      let filters = {
+        where: {
+          currentStep: 'ARCHIVE'
+        }
+      };
+
+      // Appliquer les filtres selon le rôle
+      const user = await User.findByPk(req.user.id);
+
+      if (userRole === 'EMPLOYEE') {
+        // Un employé voit ses propres archives
+        filters.where.submittedBy = req.user.id;
+      } else if (userRole === 'MANAGER') {
+        if (user?.isDirecteur) {
+          // Manager directeur voit TOUTES les archives
+          // Pas de filtre supplémentaire
+        } else if (user?.serviceId) {
+          // Manager normal voit les archives de son département
+          const serviceMembers = await User.findAll({
+            where: { serviceId: user.serviceId },
+            attributes: ['id'],
+          });
+          const memberIds = serviceMembers.map(m => m.id);
+
+          filters.where[Op.or] = [
+            { submittedBy: { [Op.in]: memberIds } },
+            { assignedTo: req.user.id }
+          ];
+        } else {
+          // Manager sans service : ses archives
+          filters.where[Op.or] = [
+            { submittedBy: req.user.id },
+            { assignedTo: req.user.id }
+          ];
+        }
+      }
+      // ADMIN voit toutes les archives (pas de filtre)
+
+      const archives = await workflowService.getWorkflows(filters);
+
+      res.json({
+        success: true,
+        message: 'Archives récupérées avec succès',
+        data: archives,
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
     }
   },
 };

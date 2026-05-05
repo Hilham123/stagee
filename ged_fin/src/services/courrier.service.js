@@ -64,10 +64,11 @@ where: { code: 'SERVICE_ADMINISTRATIF' }
 await courrier.update({
 statut:                'APPROUVE',
 etapeCircuit:          'APPROUVE',
-// Retour automatique vers le service administratif pour expédition
 serviceDestinataireId: serviceAdmin?.id || courrier.serviceDestinataireId,
 assigneA:              null, 
 })
+
+await courrier.reload()
 
 await this.ajouterHistorique(
 id, userId, 'APPROBATION',
@@ -198,7 +199,13 @@ const where = {};
 if (filters.etapeCircuit) where.etapeCircuit = filters.etapeCircuit;
 if (filters.assigneA)     where.assigneA     = filters.assigneA;
 
-// ✅ Filtrer par rôle et service - CORRECT
+// ✅ EXCLURE les archives du listing normal
+where.statut = { [Op.ne]: 'ARCHIVE' };
+
+if (nature && (user.role === 'ADMIN' || user.roleName === 'ADMIN' || user.isDirecteur || user.serviceCode === 'SERVICE_ADMINISTRATIF')) {
+  where.nature = nature;
+}
+
 const roleFilters = [];
 
 if (user.role !== 'ADMIN' && user.roleName !== 'ADMIN') {
@@ -206,35 +213,28 @@ if (user.role !== 'ADMIN' && user.roleName !== 'ADMIN') {
   const isDirecteur    = user.isDirecteur
 
   if (isServiceAdmin || isDirecteur) {
-    // Service admin et Directeur : EXTERNE + leur service + archives
     roleFilters.push(
-      { nature: 'EXTERNE' },  // Courriers externes
+      { nature: 'EXTERNE' },  
       { [Op.and]: [{ nature: 'INTERNE' }, { [Op.or]: [
         { serviceDestinataireId: user.serviceId },
         { serviceExpediteurId:   user.serviceId }
-      ]}]},
-      { statut: 'ARCHIVE' }  // Archives accessibles
+      ]}]}
     )
   } else if (user.serviceId) {
-    // Manager normal et Employee : UNIQUEMENT leur service + créés par eux + archives
     roleFilters.push(
       { [Op.and]: [{ nature: 'INTERNE' }, { serviceDestinataireId: user.serviceId }]},
       { [Op.and]: [{ nature: 'INTERNE' }, { serviceExpediteurId: user.serviceId }]},
       { createdBy: user.id },
-      { destinataireTous: true },
-      { statut: 'ARCHIVE' }  // Archives accessibles
+      { destinataireTous: true }
     )
   } else {
-    // Pas de service : voir ses propres courriers + archives
     roleFilters.push(
       { createdBy: user.id },
-      { destinataireTous: true },
-      { statut: 'ARCHIVE' }
+      { destinataireTous: true }
     )
   }
 }
 
-// ✅ Combiner le filtrage par rôle avec la recherche
 if (search) {
   const searchFilters = [
     { objet:        { [Op.iLike]: `%${search}%` } },
@@ -256,15 +256,132 @@ if (search) {
 }
 
 if (type)     where.type     = type;
-if (statut)   where.statut   = statut;
+if (statut && statut !== 'ARCHIVE')   where.statut   = statut;
 if (priorite) where.priorite = priorite;
-if (nature)   where.nature   = nature;
 
 const { rows: courriers, count } = await Courrier.findAndCountAll({
 where,
 limit:  parseInt(limit),
 offset,
 order:  [['createdAt', 'DESC']],
+include: [
+{
+model:      User,
+as:         'creator',
+attributes: ['id', 'firstName', 'lastName', 'email'],
+},
+{
+model:      DocumentModel,
+as:         'document',
+attributes: ['id', 'title', 'fileName'],
+required:   false,
+},
+{ model: User, 
+as: 'assignee', 
+attributes: ['id', 'firstName', 'lastName'], 
+required: false 
+},
+{
+model:      Service,
+as:         'serviceDestinataire',
+attributes: ['id', 'nom', 'code'],
+required:   false,
+},
+{
+model:      Service,
+as:         'serviceExpediteur',
+attributes: ['id', 'nom', 'code'],
+required:   false,
+},
+],
+});
+
+return {
+courriers,
+pagination: {
+total: count,
+page:  parseInt(page),
+limit: parseInt(limit),
+pages: Math.ceil(count / limit),
+},
+};
+},
+
+// ✅ RÉCUPÉRER LES ARCHIVES DES COURRIERS (UNIQUEMENT)
+async listCourriersArchives(filters = {}, pagination = {}, user) {
+const { type, priorite, nature, search } = filters;
+const { page = 1, limit = 10 } = pagination;
+const offset = (page - 1) * limit;
+
+const where = {};
+
+// ✅ Afficher UNIQUEMENT les courriers archivés
+where.statut = 'ARCHIVE';
+
+if (filters.etapeCircuit) where.etapeCircuit = filters.etapeCircuit;
+if (filters.assigneA)     where.assigneA     = filters.assigneA;
+
+if (nature && (user.role === 'ADMIN' || user.roleName === 'ADMIN' || user.isDirecteur || user.serviceCode === 'SERVICE_ADMINISTRATIF')) {
+  where.nature = nature;
+}
+
+const roleFilters = [];
+
+if (user.role !== 'ADMIN' && user.roleName !== 'ADMIN') {
+  const isServiceAdmin = user.serviceCode === 'SERVICE_ADMINISTRATIF'
+  const isDirecteur    = user.isDirecteur
+
+  if (isServiceAdmin || isDirecteur) {
+    roleFilters.push(
+      { nature: 'EXTERNE' },  
+      { [Op.and]: [{ nature: 'INTERNE' }, { [Op.or]: [
+        { serviceDestinataireId: user.serviceId },
+        { serviceExpediteurId:   user.serviceId }
+      ]}]}
+    )
+  } else if (user.serviceId) {
+    roleFilters.push(
+      { [Op.and]: [{ nature: 'INTERNE' }, { serviceDestinataireId: user.serviceId }]},
+      { [Op.and]: [{ nature: 'INTERNE' }, { serviceExpediteurId: user.serviceId }]},
+      { createdBy: user.id },
+      { destinataireTous: true }
+    )
+  } else {
+    roleFilters.push(
+      { createdBy: user.id },
+      { destinataireTous: true }
+    )
+  }
+}
+
+if (search) {
+  const searchFilters = [
+    { objet:        { [Op.iLike]: `%${search}%` } },
+    { expediteur:   { [Op.iLike]: `%${search}%` } },
+    { destinataire: { [Op.iLike]: `%${search}%` } },
+    { reference:    { [Op.iLike]: `%${search}%` } },
+  ]
+  
+  if (roleFilters.length > 0) {
+    where[Op.and] = [
+      { [Op.or]: roleFilters },
+      { [Op.or]: searchFilters }
+    ]
+  } else {
+    where[Op.or] = searchFilters
+  }
+} else if (roleFilters.length > 0) {
+  where[Op.or] = roleFilters
+}
+
+if (type)     where.type     = type;
+if (priorite) where.priorite = priorite;
+
+const { rows: courriers, count } = await Courrier.findAndCountAll({
+where,
+limit:  parseInt(limit),
+offset,
+order:  [['archivedAt', 'DESC']],
 include: [
 {
 model:      User,

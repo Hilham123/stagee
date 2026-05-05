@@ -11,6 +11,9 @@ router.get('/',                     authenticate, isViewer,   workflowController
 // Récupérer un workflow par ID
 router.get('/:id',                  authenticate, isViewer,   workflowController.getWorkflow);
 
+// Récupérer les archives (documents archivés uniquement)
+router.get('/archives/list',        authenticate, isViewer,   workflowController.getArchives);
+
 // Soumettre un document à la validation (EMPLOYEE+)
 router.post('/submit',              authenticate, isEmployee, workflowController.submitDocument);
 

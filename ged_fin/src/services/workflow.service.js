@@ -1,4 +1,6 @@
 const { Workflow, Document, User } = require('../models');
+const { Op } = require('sequelize');
+
 const workflowService = {
 
   // SOUMETTRE UN DOCUMENT À LA VALIDATION
@@ -15,7 +17,9 @@ const workflowService = {
     const existingWorkflow = await Workflow.findOne({
       where: {
         documentId,
-        currentStep: ['SOUMISSION', 'EN_ATTENTE_VALIDATION', 'EN_COURS_VALIDATION'],
+        currentStep: {
+          [Op.in]: ['SOUMISSION', 'EN_ATTENTE_VALIDATION', 'EN_COURS_VALIDATION'],
+        },
       },
     });
     if (existingWorkflow) {
@@ -126,8 +130,11 @@ async takeCharge(workflowId, managerId) {
   async archiveDocument(workflowId, processedBy) {
   const workflow = await Workflow.findByPk(workflowId);
   if (!workflow) throw new Error('Workflow introuvable.');
-  if (workflow.currentStep !== 'APPROUVE')
-    throw new Error('Seuls les documents approuvés peuvent être archivés.');
+  
+  // ✅ Permettre d'archiver les workflows APPROUVE ou REJETE
+  if (!['APPROUVE', 'REJETE'].includes(workflow.currentStep)) {
+    throw new Error('Seuls les documents approuvés ou rejetés peuvent être archivés.');
+  }
 
   await workflow.update({
     currentStep: 'ARCHIVE',
@@ -146,6 +153,30 @@ async takeCharge(workflowId, managerId) {
 
   return workflow;
 },
+
+  // RÉCUPÉRER UN WORKFLOW PAR ID
+  async getWorkflowById(workflowId) {
+    const workflow = await Workflow.findByPk(workflowId, {
+      include: [
+        {
+          model:      Document,
+          as:         'document',
+          attributes: ['id', 'title', 'fileName', 'category', 'status'],
+        },
+        {
+          model:      User,
+          as:         'submitter',
+          attributes: ['id', 'firstName', 'lastName', 'email'],
+        },
+        {
+          model:      User,
+          as:         'assignee',
+          attributes: ['id', 'firstName', 'lastName', 'email'],
+        },
+      ],
+    });
+    return workflow;
+  },
 
   // RÉCUPÉRER LES WORKFLOWS
   async getWorkflows(filters = {}) {

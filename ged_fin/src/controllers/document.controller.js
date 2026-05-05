@@ -1,18 +1,22 @@
 const alfrescoService  = require('../services/alfresco.service');
 const alfrescoConfig   = require('../config/alfresco');
-const { Document, User } = require('../models');
+const { Document, User, Service } = require('../models');
 const { Op } = require('sequelize');
 
 const documentController = {
 
-  // LISTER LES DOCUMENTS
+  // LISTER LES DOCUMENTS (ACTIFS - SANS ARCHIVES NI COURRIERS)
   async listDocuments(req, res) {
     try {
       const { page = 1, limit = 25, status, category } = req.query
       const offset = (page - 1) * limit
       const where  = {}
 
-      if (status)   where.status   = status
+      // ✅ EXCLURE les archives et les courriers du listing actif
+      where.status   = { [Op.ne]: 'ARCHIVE' }
+      where.category = { [Op.ne]: 'Courrier' }
+
+      if (status && status !== 'ARCHIVE')   where.status   = status
       if (category) where.category = category
 
       const userRole = req.user.roleName || req.user.role
@@ -22,14 +26,13 @@ const documentController = {
       const user = await User.findByPk(userId)
 
       if (userRole === 'ADMIN') {
-        // ✅ ADMIN voit TOUT — aucun filtre supplémentaire
+        // ✅ ADMIN voit TOUS les documents actifs — aucun filtre supplémentaire
       } else if (userRole === 'MANAGER') {
         if (user?.isDirecteur) {
-          // ✅ Directeur voit TOUT — aucun filtre supplémentaire
+          // ✅ Directeur voit TOUS les documents actifs — aucun filtre supplémentaire
         } else if (user?.serviceId) {
-          // ✅ Manager normal — voit les docs de son service
+          // ✅ Manager normal — voit les docs actifs de son service
           // On cherche les IDs des utilisateurs du même service
-          const { Service } = require('../models')
           const serviceMembers = await User.findAll({
             where: { serviceId: user.serviceId },
             attributes: ['id'],
@@ -39,21 +42,14 @@ const documentController = {
           where[Op.or] = [
             { createdBy: { [Op.in]: memberIds } }, // docs créés par son service
             { createdBy: userId },                  // ses propres docs
-            { status: 'ARCHIVE' },                  // toutes les archives visibles
           ]
         } else {
-          // Manager sans service — voit ses docs + archives
-          where[Op.or] = [
-            { createdBy: userId },
-            { status: 'ARCHIVE' },
-          ]
+          // Manager sans service — voit ses docs actifs
+          where.createdBy = userId
         }
       } else {
-        // ✅ EMPLOYEE — voit SES documents + toutes les archives
-        where[Op.or] = [
-          { createdBy: userId },
-          { status: 'ARCHIVE' },
-        ]
+        // ✅ EMPLOYEE — voit SES documents actifs
+        where.createdBy = userId
       }
 
       const { rows: documents, count } = await Document.findAndCountAll({
@@ -71,6 +67,77 @@ const documentController = {
       res.json({
         success: true,
         data: documents,
+        pagination: {
+          total: count,
+          page:  parseInt(page),
+          limit: parseInt(limit),
+          pages: Math.ceil(count / limit),
+        },
+      })
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message })
+    }
+  },
+
+  // RÉCUPÉRER LES ARCHIVES DES DOCUMENTS (UNIQUEMENT)
+  async getDocumentArchives(req, res) {
+    try {
+      const { page = 1, limit = 25, category } = req.query
+      const offset = (page - 1) * limit
+      const where  = {
+        status: 'ARCHIVE',
+        category: { [Op.ne]: 'Courrier' } // ✅ Exclure les courriers archivés
+      }
+
+      if (category) where.category = category
+
+      const userRole = req.user.roleName || req.user.role
+      const userId   = req.user.id
+
+      // Récupérer les infos complètes de l'utilisateur
+      const user = await User.findByPk(userId)
+
+      if (userRole === 'ADMIN') {
+        // ✅ ADMIN voit TOUTES les archives
+      } else if (userRole === 'MANAGER') {
+        if (user?.isDirecteur) {
+          // ✅ Directeur voit TOUTES les archives
+        } else if (user?.serviceId) {
+          // ✅ Manager normal — voit les archives de son service
+          const serviceMembers = await User.findAll({
+            where: { serviceId: user.serviceId },
+            attributes: ['id'],
+          })
+          const memberIds = serviceMembers.map(m => m.id)
+
+          where[Op.or] = [
+            { createdBy: { [Op.in]: memberIds } },
+            { createdBy: userId },
+          ]
+        } else {
+          // Manager sans service — voit ses archives
+          where.createdBy = userId
+        }
+      } else {
+        // ✅ EMPLOYEE — voit SES archives
+        where.createdBy = userId
+      }
+
+      const { rows: archives, count } = await Document.findAndCountAll({
+        where,
+        limit:   parseInt(limit),
+        offset,
+        order:   [['archivedAt', 'DESC']],
+        include: [{
+          model:      User,
+          as:         'creator',
+          attributes: ['id', 'firstName', 'lastName', 'email', 'serviceId'],
+        }],
+      })
+
+      res.json({
+        success: true,
+        data: archives,
         pagination: {
           total: count,
           page:  parseInt(page),
