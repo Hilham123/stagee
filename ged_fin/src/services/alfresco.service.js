@@ -117,10 +117,21 @@ class AlfrescoService {
     return response.data.entry;
   }
 
-  async downloadDocument(nodeId) {
+  async downloadDocument(nodeId, version = null) {
+    // ✅ Si une version est demandée, la récupérer
+    let endpoint = this.endpoints.content(nodeId);
+    
     const response = await this.client.get(
-      this.endpoints.content(nodeId),
-      { responseType: 'arraybuffer' }
+      endpoint,
+      { 
+        responseType: 'arraybuffer',
+        // ✅ Forcer le bypass du cache côté client Axios
+        params: version ? { version } : {},
+        headers: {
+          // ✅ Ajouter des headers pour forcer la récupération depuis Alfresco
+          'Cache-Control': 'no-cache, must-revalidate',
+        }
+      }
     );
     return {
       data: response.data,

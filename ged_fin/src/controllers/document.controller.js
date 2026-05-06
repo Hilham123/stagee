@@ -220,25 +220,66 @@ const documentController = {
     }
   },
 
-  // TÉLÉCHARGER UN DOCUMENT
+  // ✅ PRÉVISUALISER UN DOCUMENT (FORCE LA DERNIÈRE VERSION)
+  async previewDocument(req, res) {
+    try {
+      const document = await Document.findByPk(req.params.id);
+      if (!document || !document.alfrescoNodeId)
+        return res.status(404).json({ success: false, message: 'Document introuvable.' });
+
+      // ✅ Si le document est signé, récupérer la DERNIÈRE version
+      const { data, contentType } = document.isSigned 
+        ? await alfrescoService.downloadDocument(document.alfrescoNodeId, 'latest')
+        : await alfrescoService.downloadDocument(document.alfrescoNodeId);
+      
+      const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data);
+
+      console.log('👁️ Preview - isSigned:', document.isSigned);
+      console.log('👁️ Preview - premiers bytes:', buffer[0], buffer[1], buffer[2], buffer[3]);
+      console.log('👁️ Preview - taille:', buffer.length);
+
+      // ✅ Headers pour affichage INLINE (pas téléchargement)
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Content-Type', contentType || document.mimeType || 'application/pdf');
+      // ✅ INLINE pour affichage, pas attachment pour téléchargement
+      res.setHeader('Content-Disposition', `inline; filename="${document.fileName}"`);
+      res.setHeader('Content-Length', buffer.length);
+      res.end(buffer);
+    } catch (error) {
+      console.error('❌ Preview error:', error.message);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  // TÉLÉCHARGER UN DOCUMENT (AVEC SUPPORT DES VERSIONS)
   async downloadDocument(req, res) {
     try {
       const document = await Document.findByPk(req.params.id);
       if (!document || !document.alfrescoNodeId)
         return res.status(404).json({ success: false, message: 'Document introuvable.' });
 
-      const { data, contentType } = await alfrescoService.downloadDocument(document.alfrescoNodeId);
+      // ✅ Si le document est signé, récupérer la DERNIÈRE version
+      const { data, contentType } = document.isSigned 
+        ? await alfrescoService.downloadDocument(document.alfrescoNodeId, 'latest')
+        : await alfrescoService.downloadDocument(document.alfrescoNodeId);
+      
       const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data);
 
-      console.log('Download - premiers bytes:', buffer[0], buffer[1], buffer[2], buffer[3]);
-      console.log('Download - contentType:', contentType);
-      console.log('Download - taille:', buffer.length);
+      console.log('📥 Download - premiers bytes:', buffer[0], buffer[1], buffer[2], buffer[3]);
+      console.log('📥 Download - contentType:', contentType);
+      console.log('📥 Download - taille:', buffer.length);
 
-      res.setHeader('Cache-Control', 'no-cache, no-store');
+      // ✅ Headers ANTI-CACHE pour forcer le navigateur à récupérer la nouvelle version
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       res.setHeader('Content-Type', contentType || document.mimeType || 'application/octet-stream');
       res.setHeader('Content-Disposition', `attachment; filename="${document.fileName}"`);
       res.setHeader('Content-Length', buffer.length);
+      // ✅ Ajouter un timestamp pour forcer le revalidation
+      res.setHeader('ETag', `"${document.id}-${new Date(document.updatedAt).getTime()}"`);
       res.end(buffer);
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });

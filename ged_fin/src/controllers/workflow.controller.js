@@ -129,34 +129,35 @@ const workflowController = {
       const { Service } = require('../models');
 
       // Construire les filtres selon le rôle
-      let filters = {};
+      let filters = { where: {} };
       
+      // ✅ RESPECTER le filtre frontend si fourni
       if (currentStep) {
-        filters.where = { currentStep };
+        filters.where.currentStep = currentStep;
       } else {
-        filters.where = {};
+        // Si pas de filtre frontend, appliquer la logique par défaut
+        if (req.user.role !== 'ADMIN' && req.user.roleName !== 'ADMIN') {
+          // Non-admin sans filtre → voir les workflows en cours + les terminés (pas archive)
+          filters.where.currentStep = {
+            [Op.in]: ['EN_ATTENTE_VALIDATION', 'EN_COURS_VALIDATION', 'APPROUVE', 'REJETE']
+          };
+        }
+        // ADMIN sans filtre → voit TOUT (aucun filtre currentStep)
       }
 
       // Récupérer l'utilisateur complet pour accéder serviceId et isDirecteur
       const user = await User.findByPk(req.user.id);
       const userRole = req.user.role || req.user.roleName;
 
-      // ✅ Appliquer les filtres par rôle
-      // IMPORTANT: Montrer UNIQUEMENT les workflows en cours (EN_ATTENTE ou EN_COURS)
-      // Les workflows Approuvé/Rejeté doivent être archivés pour nettoyer le workflow
-      filters.where.currentStep = { 
-        [Op.in]: ['EN_ATTENTE_VALIDATION', 'EN_COURS_VALIDATION'] 
-      };
-
       if (userRole === 'EMPLOYEE') {
-        // Un employé voit ses soumissions en cours
+        // Un employé voit ses soumissions
         filters.where.submittedBy = req.user.id;
       } else if (userRole === 'MANAGER') {
         if (user?.isDirecteur) {
-          // ✅ Manager directeur voit TOUS les workflows en cours
+          // ✅ Manager directeur voit TOUS les workflows
           // Pas de filtre supplémentaire
         } else if (user?.serviceId) {
-          // ✅ Manager normal voit les workflows en cours de son département
+          // ✅ Manager normal voit les workflows de son département
           // Récupérer les IDs des utilisateurs du même service
           const serviceMembers = await User.findAll({
             where: { serviceId: user.serviceId },
@@ -169,14 +170,14 @@ const workflowController = {
             { assignedTo: req.user.id }               // assignés à ce manager
           ];
         } else {
-          // Manager sans service : ses workflows en cours
+          // Manager sans service : ses workflows
           filters.where[Op.or] = [
             { assignedTo: req.user.id },
             { submittedBy: req.user.id }
           ];
         }
       }
-      // ✅ ADMIN voit TOUS les workflows en cours (aucun filtre supplémentaire)
+      // ✅ ADMIN voit TOUS les workflows (aucun filtre supplémentaire)
       
       const workflows = await workflowService.getWorkflows(filters);
 

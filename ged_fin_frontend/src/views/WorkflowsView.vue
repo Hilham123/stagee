@@ -52,7 +52,7 @@
             <tr v-for="wf in workflows" :key="wf.id">
               <td>
                 <strong class="clickable" @click="openDetail(wf)">
-                  {{ wf.document?.title || wf.documentId }}
+                  {{ wf.document?.title || wf.documentId || `[Document supprimé #${wf.id}]` }}
                 </strong>
               </td>
               <td>{{ wf.submitter?.firstName }} {{ wf.submitter?.lastName }}</td>

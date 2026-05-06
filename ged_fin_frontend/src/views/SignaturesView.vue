@@ -150,6 +150,7 @@
 <div v-if="activeTab === 'preview'">
 <DocumentPreview
 v-if="previewDoc"
+:key="`doc-${previewDoc.id}-${previewRefresh}`"
 :doc-id="previewDoc.id"
 :file-name="previewDoc.fileName"
 :mime-type="previewDoc.mimeType"
@@ -262,6 +263,7 @@ const signatures   = ref([])
 const loadingDocs  = ref(true)
 const loadingSigs  = ref(true)
 const activeTab    = ref('info')
+const previewRefresh = ref(0)  // Force refresh du preview
 
 const showPreviewModal = ref(false)
 const showVerifyModal  = ref(false)
@@ -305,6 +307,7 @@ finally { loadingSigs.value = false }
 const openDocPreview = (doc) => {
 previewDoc.value       = doc
 activeTab.value        = 'info'
+previewRefresh.value++
 showPreviewModal.value = true
 }
 
@@ -358,6 +361,7 @@ const res = await api().post('/signatures/sign', {
 const sig = res.data.data
 showSignPadModal.value = false
 alert(`Document "${docToSign.value.title}" signé avec succès !`)
+previewRefresh.value++  // Force le rechargement du preview
 loadApprovedDocs()
 loadSignatures()
 } catch (e) { alert(e.response?.data?.message || 'Erreur signature') }

@@ -235,6 +235,21 @@ res.json({ success: true, data: stats });
 res.status(500).json({ success: false, message: error.message });
 }
 },
+
+// ✅ RÉCUPÉRER LES ARCHIVES DES COURRIERS (UNIQUEMENT)
+async getCourrierArchives(req, res) {
+try {
+const { type, priorite, nature, search, page, limit } = req.query;
+const result = await courrierService.listCourriersArchives(
+{ type, priorite, nature, search },
+{ page, limit },
+req.user 
+);
+res.json({ success: true, ...result });
+} catch (error) {
+res.status(500).json({ success: false, message: error.message });
+}
+},
 };
 
 module.exports = courrierController;

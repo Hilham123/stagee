@@ -72,7 +72,7 @@ error.value   = null
 type.value    = getType(props.fileName, props.mimeType)
 
 try {
-const res = await api().get(`/documents/${props.docId}/download`, {
+const res = await api().get(`/documents/${props.docId}/download?t=${Date.now()}`, {
     responseType: 'arraybuffer'
 })
 

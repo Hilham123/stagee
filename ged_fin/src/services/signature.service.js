@@ -186,17 +186,20 @@ signatureType: signatureOptions.signatureType || 'text',
 signatureImage: signatureOptions.signatureImage || null, 
 });
 
-await alfrescoService.updateDocumentContent(
+// ✅ Mettre à jour avec une version MAJEURE pour Alfresco
+const updateResult = await alfrescoService.updateDocumentContent(
 document.alfrescoNodeId,
 Buffer.from(signedPdfBytes),
-'application/pdf'
+'application/pdf',
+true // ← majorVersion = true pour créer une nouvelle version
 );
-console.log(' Signature embarquée dans le PDF avec succès');
+console.log('✅ Signature embarquée dans le PDF avec succès - Nouvelle version créée');
+console.log('Résultat update:', updateResult);
 } else {
-console.warn(' Les données ne sont pas un PDF valide — signature non embarquée');
+console.warn('⚠️ Les données ne sont pas un PDF valide — signature non embarquée');
 }
 } catch (e) {
-console.warn('Impossible d\'embarquer la signature PDF:', e.message);
+console.warn('⚠️ Impossible d\'embarquer la signature PDF:', e.message);
 }
 }
 
@@ -214,7 +217,16 @@ placement:     { x: signatureOptions.x, y: signatureOptions.y, pageIndex: signat
 },
 });
 
-await document.update({ isSigned: true, signedAt: timestamp });
+// ✅ Mettre à jour le document avec isSigned=true ET touch updatedAt (pour forcer le revalidation)
+await document.update({ 
+isSigned: true, 
+signedAt: timestamp,
+// Force la mise à jour du timestamp pour invalider le cache
+}, { 
+// Force le revalidation même si rien n'a changé
+timestamps: true 
+});
+
 return signature;
 },
 

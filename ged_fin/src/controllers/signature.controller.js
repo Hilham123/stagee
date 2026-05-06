@@ -101,9 +101,21 @@ const signatures = await signatureService.getDocumentSignatures(
     req.params.documentId
 );
 
+// ✅ Ajouter des informations de debug
+const { Document } = require('../models');
+const document = await Document.findByPk(req.params.documentId);
+
 res.json({
     success: true,
     data: signatures,
+    debug: {
+    documentId: req.params.documentId,
+    documentTitle: document?.title,
+    isSigned: document?.isSigned,
+    signedAt: document?.signedAt,
+    totalSignatures: signatures.length,
+    validSignatures: signatures.filter(s => s.status === 'VALIDE').length,
+    },
 });
 } catch (error) {
 res.status(500).json({ success: false, message: error.message });

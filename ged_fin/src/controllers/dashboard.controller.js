@@ -84,8 +84,12 @@ const dashboardController = {
         where: { currentStep: 'EN_ATTENTE_VALIDATION' },
       });
 
-      const totalSignatures = await Signature.count();
-      const validSignatures = await Signature.count({ where: { status: 'VALIDE' } });
+      const totalSignatures = await Signature.count({
+        where: { status: 'VALIDE' } // ✅ Compter uniquement les signatures VALIDES (pas révoquées)
+      });
+      const validSignatures = await Signature.count({ 
+        where: { status: 'VALIDE' } // ✅ Mêmes signatures que total
+      });
 
       const recentDocuments = await Document.findAll({
         limit: 5, order: [['createdAt', 'DESC']],

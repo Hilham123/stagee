@@ -13,7 +13,14 @@ hasPermission('courrier.stats'),
 courrierController.getStats
 );
 
-// LISTER LES COURRIERS
+// ✅ RÉCUPÉRER LES ARCHIVES DES COURRIERS (UNIQUEMENT)
+router.get('/archives/list',
+authenticate,
+hasPermission('courrier.interne.access'),
+courrierController.getCourrierArchives
+);
+
+// LISTER LES COURRIERS (ACTIFS - SANS ARCHIVES)
 router.get('/',
 authenticate,
 hasPermission('courrier.interne.access'),
