@@ -135,15 +135,12 @@ const workflowController = {
       if (currentStep) {
         filters.where.currentStep = currentStep;
       } else {
-        // Si pas de filtre frontend, appliquer la logique par défaut
-        if (req.user.role !== 'ADMIN' && req.user.roleName !== 'ADMIN') {
-          // Non-admin sans filtre → voir les workflows en cours + les terminés (pas archive)
-          filters.where.currentStep = {
-            [Op.in]: ['EN_ATTENTE_VALIDATION', 'EN_COURS_VALIDATION', 'APPROUVE', 'REJETE']
-          };
-        }
-        // ADMIN sans filtre → voit TOUT (aucun filtre currentStep)
-      }
+  // Sans filtre explicite → exclure ARCHIVE pour tout le monde
+  // (les archivés sont consultables dans la section Archives)
+  filters.where.currentStep = {
+    [Op.notIn]: ['ARCHIVE']
+  };
+}
 
       // Récupérer l'utilisateur complet pour accéder serviceId et isDirecteur
       const user = await User.findByPk(req.user.id);
@@ -154,10 +151,10 @@ const workflowController = {
         filters.where.submittedBy = req.user.id;
       } else if (userRole === 'MANAGER') {
         if (user?.isDirecteur) {
-          // ✅ Manager directeur voit TOUS les workflows
+          // Manager directeur voit TOUS les workflows
           // Pas de filtre supplémentaire
         } else if (user?.serviceId) {
-          // ✅ Manager normal voit les workflows de son département
+          // Manager normal voit les workflows de son département
           // Récupérer les IDs des utilisateurs du même service
           const serviceMembers = await User.findAll({
             where: { serviceId: user.serviceId },

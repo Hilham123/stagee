@@ -51,6 +51,8 @@ approuver:          (id)       => api.put(`/courriers/${id}/approuver`),
 creerReponse:       (id, data) => api.post(`/courriers/${id}/reponse`, data),
 getHistorique:      (id)       => api.get(`/courriers/${id}/historique`),
 signerCourrier:     (id, data) => api.put(`/courriers/${id}/signer`, data),
+genererPdf:         (id, data) => api.post(`/courriers/${id}/generer-pdf`, data),
+retention:          (id, data) => api.put(`/courriers/${id}/retention`, data),
 }
 
 

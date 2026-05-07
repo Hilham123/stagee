@@ -50,93 +50,50 @@ async embedSignatureInPdf(pdfBytes, signatureData) {
 try {
 const pdfDoc   = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
 const pages    = pdfDoc.getPages();
-const font     = await pdfDoc.embedFont(StandardFonts.Helvetica);
 const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
 const {
 x, y, pageIndex = pages.length - 1,
-signerName, signerRole, signedAt,
-signatureText, signatureType, signatureImage
+signerName, signatureText, signatureType, signatureImage
 } = signatureData;
 
-const page      = pages[Math.min(pageIndex, pages.length - 1)];
+const page  = pages[Math.min(pageIndex, pages.length - 1)];
 const { width } = page.getSize();
 
-const boxW = 280;
-const boxH = 120;
-const posX = x !== undefined ? x : width - boxW - 30;
-const posY = y !== undefined ? y : 40;
-
-// Fond et bordure
-page.drawRectangle({
-x: posX, y: posY, width: boxW, height: boxH,
-color: rgb(0.97, 0.98, 1),
-borderColor: rgb(0.15, 0.23, 0.36),
-borderWidth: 1.5,
-});
-
-// Bandeau titre
-page.drawRectangle({
-x: posX, y: posY + boxH - 22, width: boxW, height: 22,
-color: rgb(0.15, 0.23, 0.36),
-});
-page.drawText('SIGNATURE ELECTRONIQUE', {
-x: posX + 10, y: posY + boxH - 16,
-size: 9, font: boldFont, color: rgb(1, 1, 1),
-});
+const sigW = 240;
+const sigH = 80;
+const posX = x !== undefined ? x : width - sigW - 40;
+const posY = y !== undefined ? y : 60;
 
 if (signatureImage && signatureType === 'draw') {
 try {
-// Extraire le base64 pur (enlever le préfixe data:image/png;base64,)
-const base64Data = signatureImage.includes(',')
+    const base64Data = signatureImage.includes(',')
     ? signatureImage.split(',')[1]
-    : signatureImage
-const imgBytes  = Buffer.from(base64Data, 'base64')
-const pngImage  = await pdfDoc.embedPng(imgBytes)
-const imgDims   = pngImage.scaleToFit(200, 40)
-page.drawImage(pngImage, {
-    x:      posX + 10,
-    y:      posY + boxH - 66,
+    : signatureImage;
+    const imgBytes = Buffer.from(base64Data, 'base64');
+    const pngImage = await pdfDoc.embedPng(imgBytes);
+    const imgDims  = pngImage.scaleToFit(sigW, sigH);
+    page.drawImage(pngImage, {
+    x:      posX + (sigW - imgDims.width) / 2,
+    y:      posY + (sigH - imgDims.height) / 2,
     width:  imgDims.width,
     height: imgDims.height,
-})
+    });
 } catch (imgErr) {
-console.warn('Impossible d\'intégrer l\'image de signature:', imgErr.message)
-// Fallback : afficher le nom en texte
-page.drawText(signerName, {
-    x: posX + 10, y: posY + boxH - 50,
-    size: 16, font: boldFont, color: rgb(0.1, 0.2, 0.6),
-})
+    console.warn('Image signature non intégrable:', imgErr.message);
+    page.drawText(signerName || 'Signature', {
+    x: posX + 10, y: posY + 30,
+    size: 28, font: boldFont, color: rgb(0.05, 0.1, 0.5),
+    });
 }
 } else {
-//  Afficher le texte si signature texte
-const displayText = signatureText || signerName
-page.drawText(displayText.substring(0, 30), {
-x: posX + 10, y: posY + boxH - 50,
-size: 16, font: boldFont, color: rgb(0.1, 0.2, 0.6),
-})
+    const displayText = (signatureText || signerName || 'Signature').substring(0, 25);
+    const fontSize    = displayText.length > 15 ? 22 : 28;
+    page.drawText(displayText, {
+    x: posX + 10, y: posY + 30,
+    size: fontSize, font: boldFont, color: rgb(0.05, 0.1, 0.5),
+    });
 }
-
-// Ligne séparatrice
-page.drawLine({
-start: { x: posX + 10, y: posY + boxH - 70 },
-end:   { x: posX + boxW - 10, y: posY + boxH - 70 },
-thickness: 0.5, color: rgb(0.8, 0.85, 0.9),
-});
-
-// Infos signataire
-page.drawText(`Signe par : ${signerName}`, {
-x: posX + 10, y: posY + boxH - 82,
-size: 8, font: boldFont, color: rgb(0.15, 0.23, 0.36),
-});
-page.drawText(`Role : ${signerRole || '-'}`, {
-x: posX + 10, y: posY + boxH - 94,
-size: 7.5, font, color: rgb(0.3, 0.3, 0.3),
-});
-page.drawText(`Date : ${new Date(signedAt).toLocaleString('fr-FR')}`, {
-x: posX + 10, y: posY + boxH - 106,
-size: 7.5, font, color: rgb(0.3, 0.3, 0.3),
-});
 
 return await pdfDoc.save();
 } catch (e) {

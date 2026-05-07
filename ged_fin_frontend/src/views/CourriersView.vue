@@ -134,15 +134,15 @@
                     <ThumbsUp :size="15" />
                   </button>
 
-                  <!-- ✅ NOUVEAU : Rédiger & Signer (remplace l'ancien bouton signer) -->
-                  <button v-if="c.type === 'SORTANT' && c.statut === 'APPROUVE' && authStore.canChangeStatutCourrier"
-                    class="btn-action btn-sign" @click="openRediger(c)" title="Rédiger & Signer">
+                  <!-- Rédiger le contenu (EN_TRAITEMENT uniquement) -->
+                  <button v-if="c.type === 'SORTANT' && c.statut === 'EN_TRAITEMENT' && authStore.canChangeStatutCourrier"
+                    class="btn-action btn-sign" @click="openRediger(c)" title="Rédiger le courrier">
                     <FileEdit :size="15" />
                   </button>
 
-                  <!-- Signer courrier avec PDF joint existant -->
-                  <button v-if="!c.isSigned && ['EN_TRAITEMENT','EN_APPROBATION'].includes(c.statut) && authStore.canChangeStatutCourrier"
-                    class="btn-action btn-sign" @click="openSigner(c)" title="Signer électroniquement">
+                  <!-- Signer le PDF généré (APPROUVE + PDF existant) -->
+                  <button v-if="c.type === 'SORTANT' && !c.isSigned && c.statut === 'APPROUVE' && c.alfrescoPdfNodeId && authStore.canChangeStatutCourrier"
+                    class="btn-action btn-sign" @click="openSigner(c)" title="Signer le courrier">
                     <PenLine :size="15" />
                   </button>
 
@@ -245,14 +245,15 @@
           class="btn btn-primary" @click="showDetailModal = false; approuver(selectedCourrier)">
           <ThumbsUp :size="15" /> Approuver
         </button>
-        <!-- ✅ NOUVEAU : Rédiger & Signer dans la modal détail -->
-        <button v-if="selectedCourrier?.type === 'SORTANT' && selectedCourrier?.statut === 'APPROUVE' && authStore.canChangeStatutCourrier"
+        <!-- Rédiger le contenu (EN_TRAITEMENT) -->
+        <button v-if="selectedCourrier?.type === 'SORTANT' && selectedCourrier?.statut === 'EN_TRAITEMENT' && authStore.canChangeStatutCourrier"
           class="btn btn-sign-full" @click="showDetailModal = false; openRediger(selectedCourrier)">
-          <FileEdit :size="15" /> Rédiger &amp; Signer
+          <FileEdit :size="15" /> Rédiger le courrier
         </button>
-        <button v-if="!selectedCourrier?.isSigned && ['EN_TRAITEMENT','EN_APPROBATION'].includes(selectedCourrier?.statut) && authStore.canChangeStatutCourrier"
+        <!-- Signer le PDF généré (APPROUVE + PDF disponible) -->
+        <button v-if="selectedCourrier?.type === 'SORTANT' && !selectedCourrier?.isSigned && selectedCourrier?.statut === 'APPROUVE' && selectedCourrier?.alfrescoPdfNodeId && authStore.canChangeStatutCourrier"
           class="btn btn-sign-full" @click="showDetailModal = false; openSigner(selectedCourrier)">
-          <PenLine :size="15" /> Signer
+          <PenLine :size="15" /> Signer le courrier
         </button>
         <button v-if="['APPROUVE','ENVOYE'].includes(selectedCourrier?.statut) && authStore.canChangeStatutCourrier"
           class="btn btn-secondary" @click="showDetailModal = false; archiverCourrier(selectedCourrier)">
@@ -806,14 +807,27 @@ const handleGenererPdf = async () => {
 const openSigner = async (c) => {
   selectedCourrier.value = c
   courrierPdfBytes.value = ''
-  if (c.documentId || c.document?.id) {
+
+  // Priorité au PDF généré (alfrescoPdfNodeId) sinon document joint
+  const nodeId = c.alfrescoPdfNodeId || null
+  const docId  = c.documentId || c.document?.id || null
+
+  if (nodeId || docId) {
     loadingCourrierPdf.value = true
     try {
-      const docId = c.documentId || c.document.id
-      const res   = await api.get(`/documents/${docId}/download`, { responseType: 'arraybuffer' })
-      courrierPdfBytes.value = btoa(
-        new Uint8Array(res.data).reduce((data, byte) => data + String.fromCharCode(byte), '')
-      )
+      if (nodeId) {
+        // Charger le PDF généré depuis Alfresco directement via le backend
+        const res = await api.get(`/courriers/${c.id}/pdf`, { responseType: 'arraybuffer' })
+        courrierPdfBytes.value = btoa(
+          new Uint8Array(res.data).reduce((data, byte) => data + String.fromCharCode(byte), '')
+        )
+      } else {
+        // Charger le document joint classique
+        const res = await api.get(`/documents/${docId}/download`, { responseType: 'arraybuffer' })
+        courrierPdfBytes.value = btoa(
+          new Uint8Array(res.data).reduce((data, byte) => data + String.fromCharCode(byte), '')
+        )
+      }
     } catch (e) {
       console.error('Impossible de charger le PDF', e)
       courrierPdfBytes.value = ''
@@ -854,7 +868,7 @@ const handleSave = async () => {
         const fd = new FormData()
         Object.entries(form.value).forEach(([k, v]) => { if (v && k !== 'fichierJoint') fd.append(k, v) })
         fd.append('fichier', form.value.fichierJoint)
-        await api.post('/courriers', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+        await api.post('/courriers', fd)
       } else {
         await courrierService.create(form.value)
       }

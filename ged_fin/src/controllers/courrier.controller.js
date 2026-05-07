@@ -1,5 +1,7 @@
 const courrierService = require('../services/courrier.service');
 const { Courrier }    = require('../models');
+const alfrescoService = require('../services/alfresco.service');
+const alfrescoConfig  = require('../config/alfresco');
 
 const courrierController = {
 
@@ -56,6 +58,24 @@ const courrierController = {
     }
   },
 
+  // Télécharger le PDF généré depuis Alfresco
+  async downloadPdf(req, res) {
+    try {
+      const courrier = await Courrier.findByPk(req.params.id)
+      if (!courrier) return res.status(404).json({ success: false, message: 'Courrier introuvable.' })
+      if (!courrier.alfrescoPdfNodeId) return res.status(404).json({ success: false, message: 'Aucun PDF généré pour ce courrier.' })
+
+      const alfrescoService = require('../services/alfresco.service')
+      const result = await alfrescoService.downloadDocument(courrier.alfrescoPdfNodeId)
+
+      res.setHeader('Content-Type', 'application/pdf')
+      res.setHeader('Content-Disposition', `inline; filename="courrier_${courrier.reference}.pdf"`)
+      res.send(Buffer.from(result.data))
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message })
+    }
+  },
+
   // ✅ NOUVEAU : GÉNÉRER LE PDF DU COURRIER ET LE STOCKER DANS ALFRESCO
   async genererPdf(req, res) {
     try {
@@ -69,8 +89,8 @@ const courrierController = {
       if (courrier.type !== 'SORTANT') {
         return res.status(400).json({ success: false, message: 'Seuls les courriers sortants peuvent être générés en PDF.' });
       }
-      if (courrier.statut !== 'APPROUVE') {
-        return res.status(400).json({ success: false, message: 'Le courrier doit être approuvé avant génération du PDF.' });
+      if (!['EN_TRAITEMENT', 'EN_APPROBATION', 'APPROUVE'].includes(courrier.statut)) {
+        return res.status(400).json({ success: false, message: 'Le courrier doit être en traitement pour pouvoir être rédigé.' });
       }
 
       // Sauvegarder le corps dans la base
@@ -201,9 +221,10 @@ const courrierController = {
       const pdfBytes   = await pdfDoc.save();
       const fileName   = `courrier_${courrier.reference}_${Date.now()}.pdf`;
       const alfrescoNode = await alfrescoService.uploadDocument(
+        alfrescoConfig.docLibraryId,
         Buffer.from(pdfBytes),
         fileName,
-        'application/pdf'
+        { mimeType: 'application/pdf' }
       );
       const nodeId = alfrescoNode.entry?.id || alfrescoNode.id;
 
@@ -254,10 +275,12 @@ const courrierController = {
 
       if (req.file) {
         try {
-          const alfrescoService = require('../services/alfresco.service');
           const { Document }    = require('../models');
           const alfrescoNode = await alfrescoService.uploadDocument(
-            req.file.buffer, req.file.originalname, req.file.mimetype
+            alfrescoConfig.docLibraryId,
+            req.file.buffer,
+            req.file.originalname,
+            { mimeType: req.file.mimetype }
           );
           const doc = await Document.create({
             title:          req.file.originalname,

@@ -90,6 +90,13 @@ router.put('/:id/signer',
   courrierController.signerCourrier
 );
 
+// Télécharger le PDF généré d'un courrier
+router.get('/:id/pdf',
+  authenticate,
+  hasPermission('courrier.interne.access'),
+  courrierController.downloadPdf
+);
+
 // ✅ NOUVEAU : GÉNÉRER LE PDF DU COURRIER
 router.post('/:id/generer-pdf',
   authenticate,
