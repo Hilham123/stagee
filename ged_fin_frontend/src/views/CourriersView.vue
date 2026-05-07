@@ -77,23 +77,14 @@
         <table v-else class="table">
           <thead>
             <tr>
-              <th>Référence</th>
-              <th>Type</th>
-              <th>Nature</th>
-              <th>Objet</th>
-              <th>Expéditeur</th>
-              <th>Destinataire</th>
-              <th>Service dest.</th>
-              <th>Assigné à</th>
-              <th>Priorité</th>
-              <th>Statut</th>
-              <th>Date</th>
-              <th>Actions</th>
+              <th>Référence</th><th>Type</th><th>Nature</th><th>Objet</th>
+              <th>Expéditeur</th><th>Destinataire</th><th>Service dest.</th>
+              <th>Assigné à</th><th>Priorité</th><th>Statut</th><th>Date</th><th>Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="courriers.length === 0">
-              <td :colspan="11" style="text-align:center; color:#999">Aucun courrier trouvé</td>
+              <td :colspan="12" style="text-align:center; color:#999">Aucun courrier trouvé</td>
             </tr>
             <tr v-for="c in courriers" :key="c.id">
               <td><strong class="clickable" @click="openDetail(c)">{{ c.reference }}</strong></td>
@@ -118,11 +109,9 @@
                 <span v-if="c.serviceDestinataire" class="badge-simple nature-interne">{{ c.serviceDestinataire.nom }}</span>
                 <span v-else class="text-muted">—</span>
               </td>
-              <!-- Colonne Assigné à -->
               <td>
                 <span v-if="c.assignee" class="assignee-badge">
-                  <User :size="11" />
-                  {{ c.assignee.firstName }} {{ c.assignee.lastName }}
+                  <User :size="11" /> {{ c.assignee.firstName }} {{ c.assignee.lastName }}
                 </span>
                 <span v-else class="text-muted">—</span>
               </td>
@@ -132,54 +121,47 @@
               <td>
                 <div class="actions">
                   <button class="btn-action" @click="openDetail(c)" title="Voir détails"><Eye :size="15" /></button>
-
-                  <!-- Dispatch -->
                   <button v-if="authStore.canAccessCourrierExterne && c.statut === 'RECU'"
                     class="btn-action btn-dispatch" @click="openDispatch(c)" title="Dispatcher">
                     <Send :size="15" />
                   </button>
-
-                  <!-- Soumettre approbation -->
                   <button v-if="c.statut === 'EN_TRAITEMENT' && authStore.canChangeStatutCourrier"
                     class="btn-action btn-submit" @click="soumettreApprobation(c)" title="Soumettre pour approbation">
                     <CheckCircle :size="15" />
                   </button>
-
-                  <!-- Approuver -->
                   <button v-if="c.statut === 'EN_APPROBATION' && authStore.canChangeStatutCourrier"
                     class="btn-action btn-approve" @click="approuver(c)" title="Approuver">
                     <ThumbsUp :size="15" />
                   </button>
 
-                  <!-- Signer -->
-                  <button v-if="!c.isSigned && ['EN_TRAITEMENT','EN_APPROBATION','APPROUVE'].includes(c.statut) && authStore.canChangeStatutCourrier"
+                  <!-- ✅ NOUVEAU : Rédiger & Signer (remplace l'ancien bouton signer) -->
+                  <button v-if="c.type === 'SORTANT' && c.statut === 'APPROUVE' && authStore.canChangeStatutCourrier"
+                    class="btn-action btn-sign" @click="openRediger(c)" title="Rédiger & Signer">
+                    <FileEdit :size="15" />
+                  </button>
+
+                  <!-- Signer courrier avec PDF joint existant -->
+                  <button v-if="!c.isSigned && ['EN_TRAITEMENT','EN_APPROBATION'].includes(c.statut) && authStore.canChangeStatutCourrier"
                     class="btn-action btn-sign" @click="openSigner(c)" title="Signer électroniquement">
                     <PenLine :size="15" />
                   </button>
 
-                  <!-- Répondre -->
                   <button v-if="c.type === 'ENTRANT' && ['EN_TRAITEMENT','DISPATCHE'].includes(c.statut) && authStore.canCreateCourrier"
                     class="btn-action btn-reply" @click="openReponse(c)" title="Répondre">
                     <Reply :size="15" />
                   </button>
-
-                  <!-- Archiver direct -->
                   <button v-if="['APPROUVE','ENVOYE','TRAITE'].includes(c.statut) && authStore.canChangeStatutCourrier"
                     class="btn-action btn-archive" @click="archiverCourrier(c)" title="Archiver">
                     <Archive :size="15" />
                   </button>
-
-                  <!-- Changer statut -->
                   <button v-if="authStore.canChangeStatutCourrier"
                     class="btn-action btn-statut" @click="openStatut(c)" title="Changer statut">
                     <RefreshCw :size="15" />
                   </button>
-
                   <button v-if="authStore.canUpdateCourrier"
                     class="btn-action btn-edit" @click="openEdit(c)" title="Modifier">
                     <Pencil :size="15" />
                   </button>
-
                   <button v-if="authStore.canDeleteCourrier"
                     class="btn-action btn-danger" @click="deleteCourrier(c)" title="Supprimer">
                     <Trash2 :size="15" />
@@ -263,7 +245,12 @@
           class="btn btn-primary" @click="showDetailModal = false; approuver(selectedCourrier)">
           <ThumbsUp :size="15" /> Approuver
         </button>
-        <button v-if="!selectedCourrier?.isSigned && ['EN_TRAITEMENT','EN_APPROBATION','APPROUVE'].includes(selectedCourrier?.statut) && authStore.canChangeStatutCourrier"
+        <!-- ✅ NOUVEAU : Rédiger & Signer dans la modal détail -->
+        <button v-if="selectedCourrier?.type === 'SORTANT' && selectedCourrier?.statut === 'APPROUVE' && authStore.canChangeStatutCourrier"
+          class="btn btn-sign-full" @click="showDetailModal = false; openRediger(selectedCourrier)">
+          <FileEdit :size="15" /> Rédiger &amp; Signer
+        </button>
+        <button v-if="!selectedCourrier?.isSigned && ['EN_TRAITEMENT','EN_APPROBATION'].includes(selectedCourrier?.statut) && authStore.canChangeStatutCourrier"
           class="btn btn-sign-full" @click="showDetailModal = false; openSigner(selectedCourrier)">
           <PenLine :size="15" /> Signer
         </button>
@@ -344,16 +331,15 @@
         <input v-model="form.dateEnvoi" type="date" />
       </div>
 
-
       <div class="form-group" v-if="form.nature === 'INTERNE'">
-  <label class="radio-label">
-    <input type="checkbox" v-model="form.destinataireTous" />
-    <Globe :size="14" /> Envoyer à tous les services
-  </label>
-  <p class="field-hint" v-if="form.destinataireTous">
-    Ce courrier sera visible par tous les services de l'organisation.
-  </p>
-</div>
+        <label class="radio-label">
+          <input type="checkbox" v-model="form.destinataireTous" />
+          <Globe :size="14" /> Envoyer à tous les services
+        </label>
+        <p class="field-hint" v-if="form.destinataireTous">
+          Ce courrier sera visible par tous les services de l'organisation.
+        </p>
+      </div>
 
       <div class="form-group">
         <label>Notes</label>
@@ -381,13 +367,12 @@
       </template>
     </BaseModal>
 
-    <!-- Modal Dispatch — avec assignation à une personne -->
+    <!-- Modal Dispatch -->
     <BaseModal :show="showDispatchModal" cancel-text="Annuler" @close="showDispatchModal = false">
       <template #title>
         <Send :size="20" class="title-icon" /> Dispatcher le courrier
       </template>
       <p style="color:#666; margin-bottom:16px">Courrier : <strong>{{ selectedCourrier?.reference }}</strong></p>
-
       <div class="form-group">
         <label>Service destinataire *</label>
         <select v-model="dispatchForm.serviceDestinataireId" @change="loadMembresService">
@@ -395,13 +380,8 @@
           <option v-for="s in services" :key="s.id" :value="s.id">{{ s.nom }}</option>
         </select>
       </div>
-
-      <!-- Assigner à une personne — apparaît après sélection du service -->
       <div class="form-group" v-if="dispatchForm.serviceDestinataireId">
-        <label>
-          <User :size="14" style="display:inline-flex;vertical-align:middle;margin-right:4px" />
-          Assigner à une personne (optionnel)
-        </label>
+        <label><User :size="14" style="display:inline-flex;vertical-align:middle;margin-right:4px" /> Assigner à une personne (optionnel)</label>
         <div v-if="loadingMembres" class="membres-loading">
           <Loader :size="14" class="spin" /> Chargement des membres...
         </div>
@@ -411,21 +391,14 @@
             {{ m.firstName }} {{ m.lastName }}{{ m.roleName ? ' — ' + m.roleName : '' }}
           </option>
         </select>
-        <p class="field-hint">
-          Si aucune personne n'est sélectionnée, le courrier sera visible par tout le service destinataire.
-        </p>
+        <p class="field-hint">Si aucune personne n'est sélectionnée, le courrier sera visible par tout le service destinataire.</p>
       </div>
-
       <div class="form-group">
         <label>Instructions</label>
-        <textarea v-model="dispatchForm.instructions" rows="3"
-          placeholder="Instructions pour le service destinataire..."></textarea>
+        <textarea v-model="dispatchForm.instructions" rows="3" placeholder="Instructions pour le service destinataire..."></textarea>
       </div>
-
       <template #actions>
-        <button class="btn btn-primary" @click="handleDispatch">
-          <Send :size="15" /> Dispatcher
-        </button>
+        <button class="btn btn-primary" @click="handleDispatch"><Send :size="15" /> Dispatcher</button>
       </template>
     </BaseModal>
 
@@ -468,6 +441,38 @@
       </template>
     </BaseModal>
 
+    <!-- ✅ NOUVELLE Modal : Rédiger & Générer PDF -->
+    <BaseModal :show="showRedigerModal" large cancel-text="Annuler" @close="showRedigerModal = false">
+      <template #title>
+        <FileEdit :size="20" class="title-icon" color="#4338ca" /> Rédiger le courrier
+      </template>
+      <p style="color:#666; margin-bottom:4px">
+        Courrier : <strong>{{ selectedCourrier?.reference }}</strong> — {{ selectedCourrier?.objet }}
+      </p>
+      <p style="color:#888; font-size:13px; margin-bottom:16px">
+        Rédigez le contenu du courrier. Un PDF professionnel sera généré automatiquement et vous pourrez ensuite le signer.
+      </p>
+
+      <div class="form-group">
+        <label>Corps du courrier *</label>
+        <textarea
+          v-model="corpsRedige"
+          rows="12"
+          placeholder="Madame, Monsieur,&#10;&#10;Suite à votre demande du ...&#10;&#10;Veuillez agréer, Madame, Monsieur, l'expression de nos salutations distinguées."
+          style="font-family: 'Georgia', serif; font-size: 14px; line-height: 1.8; resize: vertical;"
+        ></textarea>
+        <p class="field-hint">{{ corpsRedige.length }} caractère(s)</p>
+      </div>
+
+      <template #actions>
+        <button class="btn btn-primary" :disabled="!corpsRedige.trim() || generatingPdf" @click="handleGenererPdf">
+          <Loader v-if="generatingPdf" :size="15" class="spin" />
+          <FileEdit v-else :size="15" />
+          {{ generatingPdf ? 'Génération...' : 'Générer le PDF & Signer' }}
+        </button>
+      </template>
+    </BaseModal>
+
     <!-- Modal Signer -->
     <BaseModal :show="showSignerModal" large cancel-text="Annuler" @close="showSignerModal = false">
       <template #title>
@@ -478,7 +483,7 @@
       </p>
 
       <div v-if="loadingCourrierPdf" class="pdf-loading-banner">
-        <Loader :size="16" class="spin" /> Chargement du document joint...
+        <Loader :size="16" class="spin" /> Chargement du document...
       </div>
 
       <div v-else-if="!courrierPdfBytes && !loadingCourrierPdf" class="no-pdf-banner">
@@ -518,6 +523,43 @@
       </template>
     </BaseModal>
 
+    <!-- ✅ NOUVELLE Modal : Durée de conservation (Archives) -->
+    <BaseModal :show="showRetentionModal" cancel-text="Annuler" @close="showRetentionModal = false">
+      <template #title>
+        <Clock :size="20" class="title-icon" color="#d97706" /> Durée de conservation
+      </template>
+      <p style="color:#666; margin-bottom:8px">
+        Courrier : <strong>{{ selectedCourrier?.reference }}</strong>
+      </p>
+      <p style="color:#888; font-size:13px; margin-bottom:16px">
+        Définissez la durée pendant laquelle ce courrier archivé doit être conservé.
+      </p>
+      <div class="form-group">
+        <label>Durée de conservation (années)</label>
+        <select v-model="retentionYears">
+          <option :value="1">1 an</option>
+          <option :value="2">2 ans</option>
+          <option :value="3">3 ans</option>
+          <option :value="5">5 ans (défaut)</option>
+          <option :value="10">10 ans</option>
+          <option :value="15">15 ans</option>
+          <option :value="20">20 ans</option>
+          <option :value="30">30 ans</option>
+        </select>
+      </div>
+      <p class="field-hint">
+        Date d'expiration estimée :
+        <strong>{{ selectedCourrier?.archivedAt
+          ? new Date(new Date(selectedCourrier.archivedAt).setFullYear(new Date(selectedCourrier.archivedAt).getFullYear() + retentionYears)).toLocaleDateString('fr-FR')
+          : '—' }}</strong>
+      </p>
+      <template #actions>
+        <button class="btn btn-primary" @click="handleRetention">
+          <Check :size="15" /> Confirmer
+        </button>
+      </template>
+    </BaseModal>
+
   </div>
 </template>
 
@@ -530,9 +572,13 @@ import SidebarNav    from '../components/SidebarNav.vue'
 import BaseModal     from '../components/BaseModal.vue'
 import StatCards     from '../components/StatCards.vue'
 import SignaturePad  from '../components/SignaturePad.vue'
-import { Mail, Eye, Trash2, Search, RotateCcw, Plus, RefreshCw, Pencil, ChevronLeft, ChevronRight, Loader, Save, Check,
-  ArrowDownCircle, ArrowUpCircle, MailOpen, MailCheck,Clock, AlertTriangle, Globe, Building2, Archive, User,Send, CheckCircle, ThumbsUp, Reply, MessageSquare,
-  PenLine, Paperclip, X, FileText} from 'lucide-vue-next'
+import {
+  Mail, Eye, Trash2, Search, RotateCcw, Plus, RefreshCw, Pencil,
+  ChevronLeft, ChevronRight, Loader, Save, Check, Clock,
+  ArrowDownCircle, ArrowUpCircle, MailOpen, MailCheck, AlertTriangle,
+  Globe, Building2, Archive, User, Send, CheckCircle, ThumbsUp, Reply,
+  MessageSquare, PenLine, Paperclip, X, FileText, FileEdit
+} from 'lucide-vue-next'
 
 const authStore  = useAuthStore()
 const courriers  = ref([])
@@ -544,6 +590,7 @@ const loading    = ref(true)
 const pagination = ref({ page: 1, pages: 1 })
 const filters    = ref({ type: '', statut: '', priorite: '', search: '' })
 const activeTab  = ref(authStore.isAdmin ? 'EXTERNE' : 'ALL')
+
 const showCreateModal   = ref(false)
 const showEditModal     = ref(false)
 const showStatutModal   = ref(false)
@@ -551,11 +598,18 @@ const showDetailModal   = ref(false)
 const showDispatchModal = ref(false)
 const showReponseModal  = ref(false)
 const showSignerModal   = ref(false)
-const selectedCourrier  = ref(null)
-const newStatut         = ref('')
-const fileInput         = ref(null)
+const showRedigerModal  = ref(false)   // ✅ NOUVEAU
+const showRetentionModal = ref(false)  // ✅ NOUVEAU
+
+const selectedCourrier   = ref(null)
+const newStatut          = ref('')
+const fileInput          = ref(null)
 const courrierPdfBytes   = ref('')
 const loadingCourrierPdf = ref(false)
+const corpsRedige        = ref('')     // ✅ NOUVEAU
+const generatingPdf      = ref(false)  // ✅ NOUVEAU
+const retentionYears     = ref(5)      // ✅ NOUVEAU
+
 const dispatchForm = ref({ serviceDestinataireId: '', assigneA: '', instructions: '' })
 const reponseForm  = ref({ objet: '', expediteur: '', destinataire: '', priorite: 'NORMALE', notes: '', nature: 'EXTERNE', type: 'SORTANT', dateEnvoi: '' })
 
@@ -590,16 +644,9 @@ const TRANSITIONS = {
 const transitionsDisponibles = computed(() => TRANSITIONS[selectedCourrier.value?.statut] || [])
 
 const emptyForm = () => ({
-  nature:        authStore.canAccessCourrierExterne ? 'EXTERNE' : 'INTERNE',
-  type:          'ENTRANT',
-  objet:         '',
-  expediteur:    '',
-  destinataire:  '',
-  dateReception: '',
-  dateEnvoi:     '',
-  priorite:      'NORMALE',
-  notes:         '',
-  fichierJoint:  null,
+  nature: authStore.canAccessCourrierExterne ? 'EXTERNE' : 'INTERNE',
+  type: 'ENTRANT', objet: '', expediteur: '', destinataire: '',
+  dateReception: '', dateEnvoi: '', priorite: 'NORMALE', notes: '', fichierJoint: null,
 })
 const form = ref(emptyForm())
 
@@ -634,28 +681,20 @@ const detailFields = [
   { label:'Notes',         key:'notes' },
 ]
 
-// Upload fichier
 const handleFileSelect = (e) => { form.value.fichierJoint = e.target.files[0] || null }
 const handleFileDrop   = (e) => { form.value.fichierJoint = e.dataTransfer.files[0] || null }
 
-// Chargement services
 const loadServices = async () => {
-  try {
-    const res = await serviceService.getAll()
-    services.value = res.data.data || []
-  } catch (e) { console.error(e) }
+  try { services.value = (await serviceService.getAll()).data.data || [] } catch (e) { console.error(e) }
 }
 
-// Chargement membres du service sélectionné
 const loadMembresService = async () => {
-  membresService.value  = []
+  membresService.value = []
   dispatchForm.value.assigneA = ''
   if (!dispatchForm.value.serviceDestinataireId) return
   loadingMembres.value = true
-  try {
-    const res = await api.get(`/services/${dispatchForm.value.serviceDestinataireId}/membres`)
-    membresService.value = res.data.data || []
-  } catch (e) { console.error(e) }
+  try { membresService.value = (await api.get(`/services/${dispatchForm.value.serviceDestinataireId}/membres`)).data.data || [] }
+  catch (e) { console.error(e) }
   finally { loadingMembres.value = false }
 }
 
@@ -672,15 +711,11 @@ const loadCourriers = async (page = 1) => {
       priorite: filters.value.priorite || undefined,
       search:   filters.value.search   || undefined,
     }
-
-    // Filtrage par service pour les non-admin
     if (!authStore.isAdmin) {
       params.serviceDestinataireId = authStore.serviceId
     } else {
-      // Pour les admin, filtrer par nature si onglet actif
       params.nature = activeTab.value
     }
-
     const res = await courrierService.list(params)
     courriers.value  = res.data.courriers
     pagination.value = res.data.pagination
@@ -692,14 +727,11 @@ const loadStats = async () => {
   if (!authStore.canViewStatsCourrier) return
   try {
     const params = {}
-    if (!authStore.isAdmin) {
-      params.serviceDestinataireId = authStore.serviceId
-    }
+    if (!authStore.isAdmin) params.serviceDestinataireId = authStore.serviceId
     stats.value = (await courrierService.stats(params)).data.data
   } catch (e) { console.error(e) }
 }
 
-// Ouverture modals
 const openDetail = async (c) => {
   try { selectedCourrier.value = (await courrierService.get(c.id)).data.data } catch { selectedCourrier.value = c }
   showDetailModal.value = true
@@ -716,23 +748,20 @@ const openEdit = (c) => {
   showEditModal.value = true
 }
 
-const openStatut  = (c) => { selectedCourrier.value = c; newStatut.value = (TRANSITIONS[c.statut]||[])[0]?.value||c.statut; showStatutModal.value = true }
+const openStatut = (c) => {
+  selectedCourrier.value = c
+  newStatut.value = (TRANSITIONS[c.statut]||[])[0]?.value || c.statut
+  showStatutModal.value = true
+}
 
 const openDispatch = async (c) => {
   selectedCourrier.value = c
-  dispatchForm.value = {
-    serviceDestinataireId: c.serviceDestinataireId || '',
-    assigneA:              c.assigneA              || '',
-    instructions:          ''
-  }
+  dispatchForm.value = { serviceDestinataireId: c.serviceDestinataireId || '', assigneA: c.assigneA || '', instructions: '' }
   membresService.value = []
-  // Si un service est déjà sélectionné, charger ses membres automatiquement
   if (c.serviceDestinataireId) {
     loadingMembres.value = true
-    try {
-      const res = await api.get(`/services/${c.serviceDestinataireId}/membres`)
-      membresService.value = res.data.data || []
-    } catch (e) { console.error(e) }
+    try { membresService.value = (await api.get(`/services/${c.serviceDestinataireId}/membres`)).data.data || [] }
+    catch (e) { console.error(e) }
     finally { loadingMembres.value = false }
   }
   showDispatchModal.value = true
@@ -748,23 +777,43 @@ const openReponse = (c) => {
   showReponseModal.value = true
 }
 
+// ✅ NOUVEAU : Ouvrir la modal de rédaction
+const openRediger = (c) => {
+  selectedCourrier.value = c
+  corpsRedige.value      = c.corps || ''
+  showRedigerModal.value = true
+}
+
+// ✅ NOUVEAU : Générer le PDF puis ouvrir la signature
+const handleGenererPdf = async () => {
+  if (!corpsRedige.value.trim()) return
+  generatingPdf.value = true
+  try {
+    const res = await api.post(`/courriers/${selectedCourrier.value.id}/generer-pdf`, {
+      corps: corpsRedige.value
+    })
+    showRedigerModal.value = false
+    // Ouvrir directement la modal de signature avec le PDF généré
+    courrierPdfBytes.value = res.data.pdfBase64
+    showSignerModal.value  = true
+  } catch (e) {
+    alert(e.response?.data?.message || 'Erreur lors de la génération du PDF')
+  } finally {
+    generatingPdf.value = false
+  }
+}
+
 const openSigner = async (c) => {
   selectedCourrier.value = c
   courrierPdfBytes.value = ''
-
   if (c.documentId || c.document?.id) {
     loadingCourrierPdf.value = true
     try {
       const docId = c.documentId || c.document.id
-      const res = await api.get(`/documents/${docId}/download`, {
-        responseType: 'arraybuffer'
-      })
-      const base64 = btoa(
-        new Uint8Array(res.data).reduce(
-          (data, byte) => data + String.fromCharCode(byte), ''
-        )
+      const res   = await api.get(`/documents/${docId}/download`, { responseType: 'arraybuffer' })
+      courrierPdfBytes.value = btoa(
+        new Uint8Array(res.data).reduce((data, byte) => data + String.fromCharCode(byte), '')
       )
-      courrierPdfBytes.value = base64
     } catch (e) {
       console.error('Impossible de charger le PDF', e)
       courrierPdfBytes.value = ''
@@ -772,11 +821,30 @@ const openSigner = async (c) => {
       loadingCourrierPdf.value = false
     }
   }
-
   showSignerModal.value = true
 }
 
-// Actions
+// ✅ NOUVEAU : Ouvrir la modal de rétention (appelée depuis ArchivesView)
+const openRetention = (c) => {
+  selectedCourrier.value = c
+  retentionYears.value   = c.retentionYears || 5
+  showRetentionModal.value = true
+}
+
+// ✅ NOUVEAU : Sauvegarder la durée de rétention
+const handleRetention = async () => {
+  try {
+    await api.put(`/courriers/${selectedCourrier.value.id}/retention`, {
+      retentionYears: retentionYears.value
+    })
+    showRetentionModal.value = false
+    loadCourriers()
+    alert('Durée de conservation mise à jour.')
+  } catch (e) {
+    alert(e.response?.data?.message || 'Erreur')
+  }
+}
+
 const handleSave = async () => {
   try {
     if (showEditModal.value) {
@@ -799,8 +867,11 @@ const handleSave = async () => {
 }
 
 const handleStatut = async () => {
-  try { await courrierService.changeStatut(selectedCourrier.value.id, newStatut.value); showStatutModal.value = false; loadCourriers(); loadStats() }
-  catch (e) { alert(e.response?.data?.message || 'Erreur') }
+  try {
+    await courrierService.changeStatut(selectedCourrier.value.id, newStatut.value)
+    showStatutModal.value = false
+    loadCourriers(); loadStats()
+  } catch (e) { alert(e.response?.data?.message || 'Erreur') }
 }
 
 const handleDispatch = async () => {
@@ -833,6 +904,7 @@ const handleSigner = async (sigData) => {
     await courrierService.signerCourrier(selectedCourrier.value.id, sigData)
     showSignerModal.value = false
     loadCourriers(); loadStats()
+    alert('Courrier signé avec succès !')
   } catch (e) { alert(e.response?.data?.message || 'Erreur lors de la signature') }
 }
 
@@ -843,8 +915,11 @@ const archiverCourrier = async (c) => {
 }
 
 const handleReponse = async () => {
-  try { await courrierService.creerReponse(selectedCourrier.value.id, reponseForm.value); showReponseModal.value = false; loadCourriers(); loadStats() }
-  catch (e) { alert(e.response?.data?.message || 'Erreur') }
+  try {
+    await courrierService.creerReponse(selectedCourrier.value.id, reponseForm.value)
+    showReponseModal.value = false
+    loadCourriers(); loadStats()
+  } catch (e) { alert(e.response?.data?.message || 'Erreur') }
 }
 
 const deleteCourrier = async (c) => {
@@ -853,8 +928,12 @@ const deleteCourrier = async (c) => {
   catch (e) { alert(e.response?.data?.message || 'Erreur') }
 }
 
+// Exposer openRetention pour ArchivesView si besoin
+defineExpose({ openRetention })
+
 onMounted(() => { loadCourriers(); loadStats(); loadServices() })
 </script>
+
 <style scoped>
 .layout       { display: flex; min-height: 100vh; }
 .main-content { margin-left: 240px; flex: 1; padding: 32px; background: #f5f7fa; }

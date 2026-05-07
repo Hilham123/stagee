@@ -116,7 +116,6 @@
             v-if="placement" class="sig-overlay"
             :style="{ left: placement.displayX + 'px', top: placement.displayY + 'px' }"
           >
-            <!-- Afficher image si signature dessinée sauvegardée -->
             <img v-if="usingSaved && authStore.savedSignature.image"
               :src="authStore.savedSignature.image"
               class="sig-overlay-img" />
@@ -159,7 +158,7 @@ import {
 const props = defineProps({
   pdfBytes:   { type: String, required: false, default: '' },
   signerName: { type: String, default: '' },
-  showPdf:    { type: Boolean, default: true }, 
+  showPdf:    { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['confirm'])
@@ -195,6 +194,7 @@ const hasSignature = computed(() => {
   if (mode.value === 'draw') return hasDrawing.value
   return signatureText.value.trim().length > 0
 })
+
 const canConfirm = computed(() => {
   if (!hasSignature.value) return false
   if (!props.showPdf) return true
@@ -206,13 +206,12 @@ const formatDate = (d) => d.toLocaleDateString('fr-FR')
 const getCurrentSignatureText = () => {
   if (usingSaved.value) return authStore.savedSignature.text || props.signerName
   if (mode.value === 'text') return signatureText.value || props.signerName
-return props.signerName
+  return props.signerName
 }
 
-// Utiliser signature sauvegardée 
 const useSavedSignature = () => {
-  usingSaved.value   = true
-  placement.value    = null
+  usingSaved.value = true
+  placement.value  = null
 }
 
 const saveCurrentSignature = async () => {
@@ -235,6 +234,7 @@ const saveCurrentSignature = async () => {
     alert(result.message || 'Erreur lors de la sauvegarde')
   }
 }
+
 const getCtx = () => canvas.value?.getContext('2d')
 
 const initCanvas = () => {
@@ -282,6 +282,7 @@ const clearCanvas = () => {
   hasDrawing.value = false
   placement.value  = null
 }
+
 const loadPdf = async (base64) => {
   if (!base64 || !props.showPdf) { pdfLoading.value = false; return }
   pdfLoading.value = true
@@ -319,22 +320,31 @@ const changePage = async (dir) => {
   placement.value    = null
   await renderPage(currentPage.value)
 }
+
+// ✅ CORRIGÉ : accolade fermante présente + calcul coordonnées correct
 const placeSig = (e) => {
-  const rect     = pdfCanvas.value.getBoundingClientRect()
-  const scaleX   = pdfCanvas.value.width  / rect.width
-  const scaleY   = pdfCanvas.value.height / rect.height
-  const displayX = e.clientX - rect.left - 140
-  const displayY = e.clientY - rect.top  - 30
-  const pdfX     = displayX * scaleX
-  const pdfY     = pdfCanvas.value.height - ((e.clientY - rect.top) * scaleY) - 110
+  const rect   = pdfCanvas.value.getBoundingClientRect()
+  const scaleX = pdfCanvas.value.width  / rect.width
+  const scaleY = pdfCanvas.value.height / rect.height
+
+  const displayX = e.clientX - rect.left
+  const displayY = e.clientY - rect.top
+
+  const canvasX = displayX * scaleX
+  const canvasY = displayY * scaleY
+
+  // pdf-lib : origine en bas à gauche — 120 = hauteur du cachet
+  const pdfX = canvasX
+  const pdfY = pdfCanvas.value.height - canvasY - 120
 
   placement.value = {
-    displayX, displayY,
+    displayX,
+    displayY,
     pdfX:      Math.max(0, pdfX),
     pdfY:      Math.max(0, pdfY),
     pageIndex: currentPage.value - 1,
   }
-}
+} // ← accolade fermante qui manquait !
 
 const resetPlacement = () => { placement.value = null }
 
@@ -355,8 +365,8 @@ const confirm = () => {
     signatureType:  sigType,
     signatureText:  sigText,
     signatureImage: sigImage,
-    x:         placement.value?.pdfX    || null,
-    y:         placement.value?.pdfY    || null,
+    x:         placement.value?.pdfX      || null,
+    y:         placement.value?.pdfY      || null,
     pageIndex: placement.value?.pageIndex ?? null,
   })
 }

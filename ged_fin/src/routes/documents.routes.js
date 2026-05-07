@@ -55,4 +55,8 @@ router.get('/:id/download',    authenticate, isViewer,   documentController.down
 // Lister les versions
 router.get('/:id/versions',    authenticate, isViewer,   documentController.getVersions);
 
+// Modifier la durée de conservation
+router.put('/:id/retention', authenticate, isAdmin, documentController.updateRetention);
+
+
 module.exports = router;

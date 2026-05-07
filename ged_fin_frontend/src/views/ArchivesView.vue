@@ -3,7 +3,6 @@
   <SidebarNav />
   <main class="main-content">
 
-    <!-- Header -->
     <div class="page-header">
       <div>
         <h1><Archive :size="28" class="title-icon" /> Archives</h1>
@@ -11,7 +10,6 @@
       </div>
     </div>
 
-    <!-- Stats -->
     <div class="stats-row">
       <div class="stat-card">
         <Archive :size="20" color="#6b7280" />
@@ -43,7 +41,6 @@
       </div>
     </div>
 
-    <!-- Onglets Documents / Courriers -->
     <div class="main-tabs-row">
       <button :class="['main-tab', activeMainTab === 'documents' ? 'main-tab-active' : '']"
         @click="switchMainTab('documents')">
@@ -57,7 +54,7 @@
       </button>
     </div>
 
-    <!-- SECTION DOCUMENTS                          -->
+    <!-- SECTION DOCUMENTS -->
     <template v-if="activeMainTab === 'documents'">
       <div class="card">
         <div class="filters-row">
@@ -78,8 +75,7 @@
           </div>
           <div class="form-group">
             <label>Recherche</label>
-            <input v-model="filters.search" type="text" placeholder="Titre..."
-              @keyup.enter="loadArchives()" />
+            <input v-model="filters.search" type="text" placeholder="Titre..." @keyup.enter="loadArchives()" />
           </div>
           <div style="display:flex; gap:8px; align-items:flex-end; margin-bottom:0">
             <button class="btn btn-secondary" @click="loadArchives()"><Search :size="15" /></button>
@@ -135,7 +131,7 @@
                 <div class="actions">
                   <button class="btn-action" @click="openDetail(doc)" title="Voir"><Eye :size="15" /></button>
                   <button class="btn-action" @click="downloadDoc(doc)" title="Télécharger"><Download :size="15" /></button>
-                  <button class="btn-action btn-retention" @click="openRetention(doc)" title="Modifier durée">
+                  <button class="btn-action btn-retention" @click="openDocRetention(doc)" title="Modifier durée">
                     <Clock :size="15" />
                   </button>
                 </div>
@@ -157,7 +153,8 @@
         </div>
       </div>
     </template>
-    <!-- SECTION COURRIERS                          -->
+
+    <!-- SECTION COURRIERS -->
     <template v-if="activeMainTab === 'courriers'">
       <div class="card">
         <div class="filters-row">
@@ -198,12 +195,13 @@
             <tr>
               <th>Référence</th><th>Type</th><th>Nature</th>
               <th>Objet</th><th>Expéditeur</th><th>Destinataire</th>
-              <th>Signé</th><th>Archivé le</th><th>Actions</th>
+              <!-- ✅ NOUVEAU : colonne Conservation -->
+              <th>Signé</th><th>Archivé le</th><th>Conservation</th><th>Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="courrierArchives.length === 0">
-              <td colspan="9" style="text-align:center; color:#999">Aucun courrier archivé</td>
+              <td colspan="10" style="text-align:center; color:#999">Aucun courrier archivé</td>
             </tr>
             <tr v-for="c in courrierArchives" :key="c.id">
               <td>
@@ -232,11 +230,26 @@
                   <XCircle    v-else              :size="16" color="#d1d5db" />
                 </div>
               </td>
-              <td>{{ formatDate(c.updatedAt) }}</td>
+              <td>{{ formatDate(c.archivedAt || c.updatedAt) }}</td>
+              <!-- ✅ NOUVEAU : cellule conservation courrier -->
               <td>
-                <button class="btn-action" @click="openCourrierDetail(c)" title="Voir détails">
-                  <Eye :size="15" />
-                </button>
+                <div class="retention-cell">
+                  <span class="retention-expiry">Exp: {{ formatDate(getRetentionExpiry(c)) }}</span>
+                  <span :class="`retention-badge ${getRetentionClass(c)}`">
+                    {{ getRetentionLabel(c) }}
+                  </span>
+                </div>
+              </td>
+              <td>
+                <div class="actions">
+                  <button class="btn-action" @click="openCourrierDetail(c)" title="Voir détails">
+                    <Eye :size="15" />
+                  </button>
+                  <!-- ✅ NOUVEAU : bouton modifier durée courrier -->
+                  <button class="btn-action btn-retention" @click="openCourrierRetention(c)" title="Modifier durée">
+                    <Clock :size="15" />
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -300,8 +313,6 @@
         <PenLine :size="11" /> Signé
       </span>
     </template>
-
-    <!-- Infos courrier -->
     <div class="detail-grid">
       <div class="detail-row">
         <span class="detail-label">Référence</span>
@@ -355,11 +366,18 @@
       </div>
       <div class="detail-row">
         <span class="detail-label">Archivé le</span>
-        <span>{{ formatDate(selectedCourrier?.updatedAt) }}</span>
+        <span>{{ formatDate(selectedCourrier?.archivedAt || selectedCourrier?.updatedAt) }}</span>
+      </div>
+      <!-- ✅ NOUVEAU : Conservation dans le détail -->
+      <div class="detail-row">
+        <span class="detail-label">Conservation</span>
+        <span>{{ selectedCourrier?.retentionYears || 5 }} ans</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Expiration</span>
+        <span>{{ formatDate(getRetentionExpiry(selectedCourrier)) }}</span>
       </div>
     </div>
-
-    <!-- Historique du courrier -->
     <div v-if="courrierHistorique.length" class="historique-section">
       <h3 class="historique-title"><Clock :size="14" /> Historique</h3>
       <div v-for="h in courrierHistorique" :key="h.id" class="historique-item">
@@ -377,7 +395,7 @@
     <SignatureCachet :data="cachetData || {}" :signed="true" />
   </BaseModal>
 
-  <!-- Modal Durée de rétention -->
+  <!-- Modal Durée de rétention — DOCUMENTS -->
   <BaseModal :show="showRetentionModal" cancel-text="Annuler" @close="showRetentionModal = false">
     <template #title>
       <Clock :size="20" class="title-icon" /> Modifier la durée de conservation
@@ -387,18 +405,55 @@
     </p>
     <div class="form-group">
       <label>Durée de conservation (en années) *</label>
-      <input
-        v-model.number="newRetentionYears"
-        type="number" min="1" max="99"
-        placeholder="Ex: 5"
-      />
+      <input v-model.number="newRetentionYears" type="number" min="1" max="99" placeholder="Ex: 5" />
       <p class="field-hint">
         Date d'expiration actuelle :
         <strong>{{ formatDate(getRetentionExpiry(retentionDoc)) }}</strong>
       </p>
     </div>
     <template #actions>
-      <button class="btn btn-primary" @click="handleRetention">
+      <button class="btn btn-primary" @click="handleDocRetention">
+        <Clock :size="15" /> Confirmer
+      </button>
+    </template>
+  </BaseModal>
+
+  <!-- ✅ NOUVELLE Modal Durée de rétention — COURRIERS -->
+  <BaseModal :show="showCourrierRetentionModal" cancel-text="Annuler" @close="showCourrierRetentionModal = false">
+    <template #title>
+      <Clock :size="20" class="title-icon" color="#7c3aed" /> Durée de conservation — Courrier
+    </template>
+    <p style="color:#666; margin-bottom:8px">
+      Courrier : <strong>{{ retentionCourrier?.reference }}</strong>
+    </p>
+    <p style="color:#888; font-size:13px; margin-bottom:16px">
+      Objet : {{ retentionCourrier?.objet }}
+    </p>
+    <div class="form-group">
+      <label>Durée de conservation (années)</label>
+      <select v-model="newCourrierRetentionYears">
+        <option :value="1">1 an</option>
+        <option :value="2">2 ans</option>
+        <option :value="3">3 ans</option>
+        <option :value="5">5 ans (défaut)</option>
+        <option :value="10">10 ans</option>
+        <option :value="15">15 ans</option>
+        <option :value="20">20 ans</option>
+        <option :value="30">30 ans</option>
+      </select>
+      <p class="field-hint">
+        Date d'expiration estimée :
+        <strong>{{
+          retentionCourrier?.archivedAt || retentionCourrier?.updatedAt
+            ? formatDate(new Date(new Date(retentionCourrier.archivedAt || retentionCourrier.updatedAt).setFullYear(
+                new Date(retentionCourrier.archivedAt || retentionCourrier.updatedAt).getFullYear() + newCourrierRetentionYears
+              )))
+            : '—'
+        }}</strong>
+      </p>
+    </div>
+    <template #actions>
+      <button class="btn btn-primary" @click="handleCourrierRetention">
         <Clock :size="15" /> Confirmer
       </button>
     </template>
@@ -415,7 +470,7 @@ import BaseModal       from '../components/BaseModal.vue'
 import SignatureCachet from '../components/SignatureCachet.vue'
 import DocumentPreview from '../components/DocumentPreview.vue'
 import {
-  Archive, FolderOpen, FileText, ShieldCheck, Clock, Info,
+  Archive, FileText, ShieldCheck, Clock, Info,
   Search, RotateCcw, Loader, Eye, Download, Mail, PenLine,
   CheckCircle, XCircle, ChevronLeft, ChevronRight,
   ArrowDownCircle, ArrowUpCircle, Globe, Building2
@@ -426,14 +481,10 @@ const api = () => axios.create({
   headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
 })
 
-//État principal 
 const activeMainTab = ref('documents')
+const stats = ref({ totalDocs: 0, totalCourriers: 0, signed: 0, thisMonth: 0 })
 
-const stats = ref({
-  totalDocs: 0, totalCourriers: 0, signed: 0, thisMonth: 0
-})
-
-//Documents archivés 
+// ── Documents ─────────────────────────────────────────────────────────────────
 const archives    = ref([])
 const loading     = ref(true)
 const pagination  = ref({ page: 1, pages: 1 })
@@ -445,16 +496,26 @@ const showCachetModal = ref(false)
 const selectedDoc     = ref(null)
 const cachetData      = ref(null)
 
-//Courriers archivés 
-const courrierArchives          = ref([])
-const loadingCourriers          = ref(false)
-const courrierPagination        = ref({ page: 1, pages: 1 })
-const courrierFilters           = ref({ type: '', nature: '', search: '' })
-const showCourrierDetailModal   = ref(false)
-const selectedCourrier          = ref(null)
-const courrierHistorique        = ref([])
+// Rétention documents
+const showRetentionModal = ref(false)
+const retentionDoc       = ref(null)
+const newRetentionYears  = ref(5)
 
-//  Helpers
+// ── Courriers ─────────────────────────────────────────────────────────────────
+const courrierArchives        = ref([])
+const loadingCourriers        = ref(false)
+const courrierPagination      = ref({ page: 1, pages: 1 })
+const courrierFilters         = ref({ type: '', nature: '', search: '' })
+const showCourrierDetailModal = ref(false)
+const selectedCourrier        = ref(null)
+const courrierHistorique      = ref([])
+
+// ✅ NOUVEAU : Rétention courriers
+const showCourrierRetentionModal = ref(false)
+const retentionCourrier          = ref(null)
+const newCourrierRetentionYears  = ref(5)
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : '—'
 
 const getPriorityClass = (p) => ({
@@ -469,16 +530,17 @@ const formatAction = (a) => ({
   APPROBATION: 'Approbation', SIGNATURE: 'Signature',
 })[a] || a
 
-const getRetentionExpiry = (doc) => {
-  const base = doc.archivedAt || doc.updatedAt
+const getRetentionExpiry = (item) => {
+  if (!item) return null
+  const base = item.archivedAt || item.updatedAt
   if (!base) return null
   const expiry = new Date(base)
-  expiry.setFullYear(expiry.getFullYear() + (doc.retentionYears || 5))
+  expiry.setFullYear(expiry.getFullYear() + (item.retentionYears || 5))
   return expiry
 }
 
-const getRetentionClass = (doc) => {
-  const expiry   = getRetentionExpiry(doc)
+const getRetentionClass = (item) => {
+  const expiry   = getRetentionExpiry(item)
   if (!expiry) return 'retention-unknown'
   const diffDays = Math.floor((expiry - new Date()) / (1000 * 60 * 60 * 24))
   if (diffDays < 0)   return 'retention-expired'
@@ -486,8 +548,8 @@ const getRetentionClass = (doc) => {
   return 'retention-ok'
 }
 
-const getRetentionLabel = (doc) => {
-  const expiry = getRetentionExpiry(doc)
+const getRetentionLabel = (item) => {
+  const expiry = getRetentionExpiry(item)
   if (!expiry) return 'N/A'
   const diffDays = Math.floor((expiry - new Date()) / (1000 * 60 * 60 * 24))
   if (diffDays < 0) return 'Expiré'
@@ -509,30 +571,26 @@ const detailFields = [
   { label: 'Expiration',   format: (doc) => formatDate(getRetentionExpiry(doc)) },
 ]
 
-const showRetentionModal = ref(false)
-const retentionDoc       = ref(null)
-const newRetentionYears  = ref(5)
-//Onglet principal 
+// ── Onglets ───────────────────────────────────────────────────────────────────
 const switchMainTab = (tab) => {
   activeMainTab.value = tab
-  if (tab === 'courriers' && courrierArchives.value.length === 0) {
-    loadCourrierArchives()
-  }
+  if (tab === 'courriers' && courrierArchives.value.length === 0) loadCourrierArchives()
 }
 
-//Chargement documents archivés 
+// ── Chargement documents ──────────────────────────────────────────────────────
 const loadArchives = async (page = 1) => {
   loading.value = true
   try {
-    const params = { page, limit: 10, status: 'ARCHIVE' }
+    const params = { page, limit: 10 }
     if (filters.value.category) params.category = filters.value.category
     if (filters.value.search)   params.search   = filters.value.search
-    const res  = await api().get('/documents', { params })
+    // ✅ CORRIGÉ : bonne route
+    const res  = await api().get('/documents/archives/list', { params })
     let docs   = res.data.data || []
     if (filters.value.signed !== '')
       docs = docs.filter(d => String(d.isSigned) === filters.value.signed)
-    archives.value   = docs
-    pagination.value = res.data.pagination || { page: 1, pages: 1 }
+    archives.value        = docs
+    pagination.value      = res.data.pagination || { page: 1, pages: 1 }
     stats.value.totalDocs = res.data.pagination?.total || docs.length
     stats.value.signed    = docs.filter(d => d.isSigned).length
   } catch (e) { console.error(e) }
@@ -543,13 +601,15 @@ const resetFilters = () => {
   filters.value = { category: '', signed: '', search: '' }
   loadArchives()
 }
-const openRetention = (doc) => {
-  retentionDoc.value      = doc
-  newRetentionYears.value = doc.retentionYears || 5
+
+// Rétention documents
+const openDocRetention = (doc) => {
+  retentionDoc.value       = doc
+  newRetentionYears.value  = doc.retentionYears || 5
   showRetentionModal.value = true
 }
 
-const handleRetention = async () => {
+const handleDocRetention = async () => {
   if (!newRetentionYears.value || newRetentionYears.value < 1) {
     alert('Durée invalide — minimum 1 an')
     return
@@ -564,18 +624,19 @@ const handleRetention = async () => {
   } catch (e) { alert(e.response?.data?.message || 'Erreur') }
 }
 
-//Chargement courriers archivés
+// ── Chargement courriers ──────────────────────────────────────────────────────
 const loadCourrierArchives = async (page = 1) => {
   loadingCourriers.value = true
   try {
-    const params = { page, limit: 10, statut: 'ARCHIVE' }
+    const params = { page, limit: 10 }
     if (courrierFilters.value.type)   params.type   = courrierFilters.value.type
     if (courrierFilters.value.nature) params.nature = courrierFilters.value.nature
     if (courrierFilters.value.search) params.search = courrierFilters.value.search
-    const res = await api().get('/courriers', { params })
-    courrierArchives.value   = res.data.courriers || []
-    courrierPagination.value = res.data.pagination || { page: 1, pages: 1 }
-    stats.value.totalCourriers = res.data.pagination?.total || courrierArchives.value.length
+    // ✅ CORRIGÉ : bonne route
+    const res = await api().get('/courriers/archives/list', { params })
+    courrierArchives.value        = res.data.courriers || []
+    courrierPagination.value      = res.data.pagination || { page: 1, pages: 1 }
+    stats.value.totalCourriers    = res.data.pagination?.total || courrierArchives.value.length
   } catch (e) { console.error(e) }
   finally { loadingCourriers.value = false }
 }
@@ -585,7 +646,25 @@ const resetCourrierFilters = () => {
   loadCourrierArchives()
 }
 
-//Actions documents 
+// ✅ NOUVEAU : Rétention courriers
+const openCourrierRetention = (c) => {
+  retentionCourrier.value          = c
+  newCourrierRetentionYears.value  = c.retentionYears || 5
+  showCourrierRetentionModal.value = true
+}
+
+const handleCourrierRetention = async () => {
+  try {
+    await api().put(`/courriers/${retentionCourrier.value.id}/retention`, {
+      retentionYears: newCourrierRetentionYears.value
+    })
+    showCourrierRetentionModal.value = false
+    loadCourrierArchives()
+    alert('Durée de conservation mise à jour !')
+  } catch (e) { alert(e.response?.data?.message || 'Erreur') }
+}
+
+// ── Actions documents ─────────────────────────────────────────────────────────
 const openDetail = (doc) => {
   selectedDoc.value     = doc
   activeTab.value       = 'info'
@@ -604,26 +683,26 @@ const downloadDoc = async (doc) => {
 }
 
 const openCachet = async (doc) => {
-try {
-  const res = await api().get(`/signatures/document/${doc.id}`)
-  const sig = res.data.data?.[0]
-  if (!sig) return alert('Aucune signature trouvée')
-  cachetData.value = {
-    signerName:     `${sig.signer?.firstName} ${sig.signer?.lastName}`,
-    signerRole:     sig.signer?.roleName || sig.metadata?.signerRole || '-',
-    documentTitle:  sig.metadata?.documentTitle || doc.title,
-    signedAt:       sig.signedAt,
-    documentHash:   sig.documentHash,
-    signatureValue: sig.signatureValue,
-  }
-  showCachetModal.value = true
-} catch { alert('Erreur chargement cachet') }
+  try {
+    const res = await api().get(`/signatures/document/${doc.id}`)
+    const sig = res.data.data?.[0]
+    if (!sig) return alert('Aucune signature trouvée')
+    cachetData.value = {
+      signerName:     `${sig.signer?.firstName} ${sig.signer?.lastName}`,
+      signerRole:     sig.signer?.roleName || sig.metadata?.signerRole || '-',
+      documentTitle:  sig.metadata?.documentTitle || doc.title,
+      signedAt:       sig.signedAt,
+      documentHash:   sig.documentHash,
+      signatureValue: sig.signatureValue,
+    }
+    showCachetModal.value = true
+  } catch { alert('Erreur chargement cachet') }
 }
 
-//Actions courriers 
+// ── Actions courriers ─────────────────────────────────────────────────────────
 const openCourrierDetail = async (c) => {
-  selectedCourrier.value = c
-  courrierHistorique.value = []
+  selectedCourrier.value        = c
+  courrierHistorique.value      = []
   showCourrierDetailModal.value = true
   try {
     const res = await api().get(`/courriers/${c.id}/historique`)
@@ -636,6 +715,7 @@ onMounted(() => {
   loadCourrierArchives()
 })
 </script>
+
 <style scoped>
 .btn-retention { background: #f0f9ff; color: #0369a1; }
 .field-hint    { font-size: 12px; color: #94a3b8; margin-top: 4px; font-style: italic; }

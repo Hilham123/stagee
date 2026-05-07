@@ -22,7 +22,6 @@
               <option value="EN_COURS_VALIDATION">En cours</option>
               <option value="APPROUVE">Approuvé</option>
               <option value="REJETE">Rejeté</option>
-              <option value="ARCHIVE">Archivé</option>
             </select>
           </div>
           <div style="display:flex; gap:8px; align-items:flex-end; margin-bottom:0">
@@ -94,7 +93,7 @@
                   <button
                     v-if="(authStore.isAdmin || authStore.isManager) && wf.currentStep === 'APPROUVE'"
                     class="btn-action btn-archive"
-                    @click="archiveWorkflow(wf)" title="Archiver">
+                    @click="openArchive(wf)" title="Archiver">
                     <Archive :size="15" />
                   </button>
                 </div>
@@ -183,6 +182,11 @@
           class="btn btn-danger" @click="showDetailModal = false; openReject(selectedWorkflow)">
           <ThumbsDown :size="15" /> Rejeter
         </button>
+        <button
+          v-if="(authStore.isAdmin || authStore.isManager) && selectedWorkflow?.currentStep === 'APPROUVE'"
+          class="btn btn-archive" @click="showDetailModal = false; openArchive(selectedWorkflow)">
+          <Archive :size="15" /> Archiver
+        </button>
       </template>
     </BaseModal>
 
@@ -224,6 +228,27 @@
       </template>
     </BaseModal>
 
+    <!-- Modal Confirmation Archivage -->
+    <BaseModal :show="showArchiveModal" cancel-text="Annuler" @close="showArchiveModal = false">
+      <template #title>
+        <Archive :size="20" class="title-icon" color="#9333ea" /> Confirmer l'archivage
+      </template>
+      <p style="color:#666; margin-bottom:8px">
+        Vous êtes sur le point d'archiver le document :
+      </p>
+      <p style="font-weight:600; color:#1a3a5c; margin-bottom:16px">
+        {{ workflowToArchive?.document?.title }}
+      </p>
+      <p style="color:#888; font-size:13px">
+        Ce document quittera le workflow et sera consultable dans la section <strong>Archives</strong>.
+      </p>
+      <template #actions>
+        <button class="btn btn-archive" @click="confirmArchive">
+          <Archive :size="15" /> Confirmer l'archivage
+        </button>
+      </template>
+    </BaseModal>
+
   </div>
 </template>
 
@@ -234,8 +259,7 @@ import { workflowService } from '../services/api'
 import SidebarNav      from '../components/SidebarNav.vue'
 import BaseModal       from '../components/BaseModal.vue'
 import DocumentPreview from '../components/DocumentPreview.vue'
-import {GitBranch, Loader, RotateCcw, UserCheck, Eye, FileText, Info,ThumbsUp, ThumbsDown, Archive, Check, X
-} from 'lucide-vue-next'
+import { GitBranch, Loader, RotateCcw, UserCheck, Eye, FileText, Info, ThumbsUp, ThumbsDown, Archive, Check, X } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
 const workflows = ref([])
@@ -246,8 +270,10 @@ const activeTab = ref('info')
 const showDetailModal  = ref(false)
 const showApproveModal = ref(false)
 const showRejectModal  = ref(false)
-const selectedWorkflow = ref(null)
-const actionComment    = ref('')
+const showArchiveModal = ref(false)
+const selectedWorkflow  = ref(null)
+const workflowToArchive = ref(null)
+const actionComment     = ref('')
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : '-'
 const formatStep = (step) => ({
@@ -316,12 +342,19 @@ const handleReject = async () => {
   } catch (error) { alert(error.response?.data?.message || 'Erreur') }
 }
 
-const archiveWorkflow = async (wf) => {
-  if (!confirm('Archiver ce document ?')) return
+const openArchive = (wf) => {
+  workflowToArchive.value = wf
+  showArchiveModal.value  = true
+}
+
+const confirmArchive = async () => {
   try {
-    await workflowService.archive(wf.id)
-    loadWorkflows()
-    alert('Document archivé avec succès !')
+    await workflowService.archive(workflowToArchive.value.id)
+    workflows.value         = workflows.value.filter(w => w.id !== workflowToArchive.value.id)
+    showArchiveModal.value  = false
+    showDetailModal.value   = false
+    workflowToArchive.value = null
+    alert('Document archivé ! Consultez la section Archives.')
   } catch (error) { alert(error.response?.data?.message || 'Erreur') }
 }
 
