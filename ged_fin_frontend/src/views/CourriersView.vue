@@ -137,7 +137,7 @@
                   <!-- Rédiger le contenu (EN_TRAITEMENT uniquement) -->
                   <button v-if="c.type === 'SORTANT' && c.statut === 'EN_TRAITEMENT' && authStore.canChangeStatutCourrier"
                     class="btn-action btn-sign" @click="openRediger(c)" title="Rédiger le courrier">
-                    <FileEdit :size="15" />
+                    <FileText :size="15" />
                   </button>
 
                   <!-- Signer le PDF généré (APPROUVE + PDF existant) -->
@@ -248,7 +248,7 @@
         <!-- Rédiger le contenu (EN_TRAITEMENT) -->
         <button v-if="selectedCourrier?.type === 'SORTANT' && selectedCourrier?.statut === 'EN_TRAITEMENT' && authStore.canChangeStatutCourrier"
           class="btn btn-sign-full" @click="showDetailModal = false; openRediger(selectedCourrier)">
-          <FileEdit :size="15" /> Rédiger le courrier
+          <FileText :size="15" /> Rédiger le courrier
         </button>
         <!-- Signer le PDF généré (APPROUVE + PDF disponible) -->
         <button v-if="selectedCourrier?.type === 'SORTANT' && !selectedCourrier?.isSigned && selectedCourrier?.statut === 'APPROUVE' && selectedCourrier?.alfrescoPdfNodeId && authStore.canChangeStatutCourrier"
@@ -445,7 +445,7 @@
     <!-- ✅ NOUVELLE Modal : Rédiger & Générer PDF -->
     <BaseModal :show="showRedigerModal" large cancel-text="Annuler" @close="showRedigerModal = false">
       <template #title>
-        <FileEdit :size="20" class="title-icon" color="#4338ca" /> Rédiger le courrier
+        <FileText :size="20" class="title-icon" color="#4338ca" /> Rédiger le courrier
       </template>
       <p style="color:#666; margin-bottom:4px">
         Courrier : <strong>{{ selectedCourrier?.reference }}</strong> — {{ selectedCourrier?.objet }}
@@ -468,7 +468,7 @@
       <template #actions>
         <button class="btn btn-primary" :disabled="!corpsRedige.trim() || generatingPdf" @click="handleGenererPdf">
           <Loader v-if="generatingPdf" :size="15" class="spin" />
-          <FileEdit v-else :size="15" />
+          <FileText v-else :size="15" />
           {{ generatingPdf ? 'Génération...' : 'Générer le PDF & Signer' }}
         </button>
       </template>
@@ -578,7 +578,7 @@ import {
   ChevronLeft, ChevronRight, Loader, Save, Check, Clock,
   ArrowDownCircle, ArrowUpCircle, MailOpen, MailCheck, AlertTriangle,
   Globe, Building2, Archive, User, Send, CheckCircle, ThumbsUp, Reply,
-  MessageSquare, PenLine, Paperclip, X, FileText, FileEdit
+  MessageSquare, PenLine, Paperclip, X, FileText
 } from 'lucide-vue-next'
 
 const authStore  = useAuthStore()
