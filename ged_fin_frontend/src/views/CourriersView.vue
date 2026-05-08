@@ -593,10 +593,9 @@ import StatCards     from '../components/StatCards.vue'
 import SignaturePad  from '../components/SignaturePad.vue'
 import {
   Mail, Eye, Trash2, Search, RotateCcw, Plus, RefreshCw, Pencil,
-  ChevronLeft, ChevronRight, Loader, Save, Check, Clock,
-  ArrowDownCircle, ArrowUpCircle, MailOpen, MailCheck, AlertTriangle,
+  ChevronLeft, ChevronRight, Loader, ArrowDownCircle, ArrowUpCircle,
   Globe, Building2, Archive, User, Send, CheckCircle, ThumbsUp, Reply,
-  MessageSquare, PenLine, Paperclip, X, FileText
+  PenLine, X, FileText
 } from 'lucide-vue-next'
 
 const authStore  = useAuthStore()

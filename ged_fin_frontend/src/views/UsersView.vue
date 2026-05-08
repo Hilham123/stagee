@@ -240,7 +240,7 @@ import BaseModal  from '../components/BaseModal.vue'
 import {
 Users, Plus, Search, RotateCcw, Loader, Pencil,
 Trash2, UserCheck, UserX, ChevronLeft, ChevronRight,
-Save, Eye, EyeOff, Building2, Crown
+Building2, Crown, Eye, EyeOff
 } from 'lucide-vue-next'
 
 const authStore  = useAuthStore()

@@ -250,7 +250,7 @@ import BaseModal       from '../components/BaseModal.vue'
 import DocumentPreview from '../components/DocumentPreview.vue'
 import SignaturePad from '../components/SignaturePad.vue'
 import axios from 'axios'
-import {PenLine, FileCheck, ClipboardList, Loader, FileText, Info,CheckCircle, XCircle, Eye, ShieldCheck, ShieldOff, AlertTriangle} from 'lucide-vue-next'
+import {PenLine, FileCheck, ClipboardList, Loader, FileText, CheckCircle, XCircle, Eye, ShieldCheck, ShieldOff} from 'lucide-vue-next'
 
 const api = () => axios.create({
   baseURL: 'http://localhost:3000/api',

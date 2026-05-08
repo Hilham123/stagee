@@ -67,26 +67,24 @@ history: createWebHistory(),
 routes,
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, from) => {
 const authStore = useAuthStore()
 const role      = authStore.user?.roleName || authStore.user?.role
 
 // Page admin uniquement
 if (to.meta.adminOnly && role !== 'ADMIN') {
-  return next({ name: 'Dashboard' })
+  return { name: 'Dashboard' }
 }
 
 // Page protégée sans token → login
 if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-  return next({ name: 'Login' })
+  return { name: 'Login' }
 }
 
 // Déjà connecté → pas besoin de revoir le login
 if (to.name === 'Login' && authStore.isAuthenticated) {
-  return next({ name: 'Dashboard' })
+  return { name: 'Dashboard' }
 }
-
-next()
 })
 
 export default router

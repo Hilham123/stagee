@@ -132,7 +132,7 @@ import SidebarNav from '../components/SidebarNav.vue'
 import BaseModal  from '../components/BaseModal.vue'
 import {
 Shield, Plus, Loader, Pencil, Trash2,
-Users, Lock, CheckCircle, XCircle, Save
+Users, Lock
 } from 'lucide-vue-next'
 
 const roles           = ref([])
