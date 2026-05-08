@@ -185,7 +185,7 @@
     </main>
 
     <!-- Modal Détails -->
-    <BaseModal :show="showDetailModal" large @close="showDetailModal = false">
+    <BaseModal :show="showDetailModal" large @close="showDetailModal = false; showPdfInDetail = false; pdfPreviewUrl = ''">
       <template #title>
         <Mail :size="20" class="title-icon" /> {{ selectedCourrier?.reference }}
         <span v-if="selectedCourrier?.isSigned" class="badge-simple statut-approuve" style="margin-left:8px; font-size:11px;">
@@ -230,6 +230,24 @@
           </span>
           <span v-else>{{ field.format ? field.format(selectedCourrier) : selectedCourrier?.[field.key] || '—' }}</span>
         </div>
+      </div>
+
+      <!-- Prévisualisation PDF si disponible -->
+      <div v-if="selectedCourrier?.alfrescoPdfNodeId" style="margin-top: 16px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <strong style="font-size:13px;">📄 Document PDF</strong>
+          <button class="btn btn-secondary" style="font-size:12px; padding:4px 10px;" @click="togglePdfInDetail(selectedCourrier)">
+            {{ showPdfInDetail ? 'Masquer le PDF' : 'Prévisualiser le PDF' }}
+          </button>
+        </div>
+        <div v-if="loadingPdfPreview" class="pdf-loading-banner">
+          <Loader :size="16" class="spin" /> Chargement du PDF...
+        </div>
+        <iframe
+          v-else-if="showPdfInDetail && pdfPreviewUrl"
+          :src="pdfPreviewUrl"
+          style="width:100%; height:500px; border:1px solid #e2e8f0; border-radius:8px;"
+        />
       </div>
 
       <template #actions>
@@ -601,6 +619,9 @@ const showReponseModal  = ref(false)
 const showSignerModal   = ref(false)
 const showRedigerModal  = ref(false)   // ✅ NOUVEAU
 const showRetentionModal = ref(false)  // ✅ NOUVEAU
+const showPdfInDetail    = ref(false)
+const pdfPreviewUrl      = ref('')
+const loadingPdfPreview  = ref(false)
 
 const selectedCourrier   = ref(null)
 const newStatut          = ref('')
@@ -776,6 +797,27 @@ const openReponse = (c) => {
     dateEnvoi: new Date().toISOString().split('T')[0]
   }
   showReponseModal.value = true
+}
+
+// Prévisualiser le PDF dans la modal de détail
+const togglePdfInDetail = async (c) => {
+  if (showPdfInDetail.value) {
+    showPdfInDetail.value = false
+    pdfPreviewUrl.value   = ''
+    return
+  }
+  loadingPdfPreview.value = true
+  showPdfInDetail.value   = true
+  try {
+    const res = await api.get(`/courriers/${c.id}/pdf`, { responseType: 'arraybuffer' })
+    const blob = new Blob([res.data], { type: 'application/pdf' })
+    pdfPreviewUrl.value = URL.createObjectURL(blob)
+  } catch (e) {
+    console.error('Erreur chargement PDF', e)
+    showPdfInDetail.value = false
+  } finally {
+    loadingPdfPreview.value = false
+  }
 }
 
 // ✅ NOUVEAU : Ouvrir la modal de rédaction

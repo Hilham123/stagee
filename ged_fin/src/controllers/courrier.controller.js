@@ -99,6 +99,8 @@ const courrierController = {
       // Génération du PDF avec pdf-lib
       const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
       const alfrescoService = require('../services/alfresco.service');
+      const fs   = require('fs');
+      const path = require('path');
 
       const pdfDoc  = await PDFDocument.create();
       const page    = pdfDoc.addPage([595, 842]); // A4
@@ -107,47 +109,82 @@ const courrierController = {
       const fontBold    = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
       const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-      const margin    = 60;
-      const colWidth  = width - margin * 2;
-      let   cursorY   = height - margin;
+      const margin   = 50;
+      let   cursorY  = height - margin;
 
-      // ── EN-TÊTE style IT Integration ─────────────────────────────
-      // Bloc droite : BURKINA FASO + destinataire
+      // ── EN-TÊTE : 3 LOGOS (gauche / centre / droite) ─────────────
+      const imagesDir = path.join(__dirname, '../../../ged_fin_frontend');
+      const logoHeight = 70;
+
+      try {
+        // Logo gauche : 1er image.png (System Integration)
+        const img1Bytes = fs.readFileSync(path.join(imagesDir, '1er image.png'));
+        const img1      = await pdfDoc.embedPng(img1Bytes);
+        const img1Dims  = img1.scale(1);
+        const img1W     = (img1Dims.width / img1Dims.height) * logoHeight;
+        page.drawImage(img1, { x: margin, y: height - margin - logoHeight, width: img1W, height: logoHeight });
+
+        // Logo centre : logo it.png (IT Integration)
+        const img2Bytes = fs.readFileSync(path.join(imagesDir, 'logo it.png'));
+        const img2      = await pdfDoc.embedPng(img2Bytes);
+        const img2Dims  = img2.scale(1);
+        const img2W     = (img2Dims.width / img2Dims.height) * logoHeight;
+        page.drawImage(img2, { x: (width - img2W) / 2, y: height - margin - logoHeight, width: img2W, height: logoHeight });
+
+        // Logo droite : 2eme image.png (Integration Solutions)
+        const img3Bytes = fs.readFileSync(path.join(imagesDir, '2eme image.png'));
+        const img3      = await pdfDoc.embedPng(img3Bytes);
+        const img3Dims  = img3.scale(1);
+        const img3W     = (img3Dims.width / img3Dims.height) * logoHeight;
+        page.drawImage(img3, { x: width - margin - img3W, y: height - margin - logoHeight, width: img3W, height: logoHeight });
+      } catch (imgErr) {
+        console.warn('Images en-tête non trouvées, en-tête texte uniquement :', imgErr.message);
+      }
+
+      // Ligne séparatrice sous les logos
+      const headerBottom = height - margin - logoHeight - 10;
+      page.drawLine({
+        start: { x: margin, y: headerBottom },
+        end:   { x: width - margin, y: headerBottom },
+        thickness: 1, color: rgb(0.1, 0.1, 0.1),
+      });
+
+      cursorY = headerBottom - 20;
+
+      // ── BLOC DROIT : BURKINA FASO + destinataire ──────────────────
       page.drawText('BURKINA FASO', {
-        x: width - margin - 160, y: height - 60,
+        x: width - margin - 170, y: cursorY,
         size: 11, font: fontBold, color: rgb(0.1, 0.1, 0.1),
       });
+      cursorY -= 14;
       page.drawText('La Patrie ou la Mort, Nous Vaincrons', {
-        x: width - margin - 160, y: height - 75,
+        x: width - margin - 170, y: cursorY,
         size: 8, font: fontRegular, color: rgb(0.2, 0.2, 0.2),
       });
+      cursorY -= 18;
       page.drawText('Le Directeur Général de IT INTEGRATION', {
-        x: width - margin - 160, y: height - 100,
+        x: width - margin - 170, y: cursorY,
         size: 9, font: fontBold, color: rgb(0.1, 0.1, 0.1),
       });
+      cursorY -= 14;
       page.drawText('A', {
-        x: width - margin - 100, y: height - 115,
+        x: width - margin - 90, y: cursorY,
         size: 10, font: fontBold, color: rgb(0.1, 0.1, 0.1),
       });
-      page.drawText(courrier.destinataire, {
-        x: width - margin - 160, y: height - 130,
+      cursorY -= 14;
+      page.drawText(courrier.destinataire || '', {
+        x: width - margin - 170, y: cursorY,
         size: 9, font: fontRegular, color: rgb(0.1, 0.1, 0.1),
       });
 
+      cursorY -= 30;
+
       // Objet
-      cursorY = height - 180;
       page.drawText(`Objet : ${courrier.objet}`, {
         x: margin, y: cursorY,
         size: 11, font: fontBold, color: rgb(0.1, 0.1, 0.1),
       });
-      cursorY -= 40;
-
-      // Ligne séparatrice légère
-      page.drawLine({
-        start: { x: margin, y: cursorY + 20 },
-        end:   { x: width - margin, y: cursorY + 20 },
-        thickness: 0.5, color: rgb(0.8, 0.8, 0.8),
-      });
+      cursorY -= 30;
 
       // ── CORPS DU COURRIER ─────────────────────────────────────────
       const words = corps.trim().split(' ');
