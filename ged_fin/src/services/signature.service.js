@@ -53,8 +53,8 @@ const pages    = pdfDoc.getPages();
 const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
 const {
-x, y, pageIndex = pages.length - 1,
-signerName, signatureText, signatureType, signatureImage
+    x, y, pageIndex = pages.length - 1,
+    signerName, signatureText, signatureType, signatureImage
 } = signatureData;
 
 const page  = pages[Math.min(pageIndex, pages.length - 1)];
@@ -66,26 +66,26 @@ const posX = x !== undefined ? x : width - sigW - 40;
 const posY = y !== undefined ? y : 60;
 
 if (signatureImage && signatureType === 'draw') {
-try {
+    try {
     const base64Data = signatureImage.includes(',')
-    ? signatureImage.split(',')[1]
-    : signatureImage;
+        ? signatureImage.split(',')[1]
+        : signatureImage;
     const imgBytes = Buffer.from(base64Data, 'base64');
     const pngImage = await pdfDoc.embedPng(imgBytes);
     const imgDims  = pngImage.scaleToFit(sigW, sigH);
     page.drawImage(pngImage, {
-    x:      posX + (sigW - imgDims.width) / 2,
-    y:      posY + (sigH - imgDims.height) / 2,
-    width:  imgDims.width,
-    height: imgDims.height,
+        x:      posX + (sigW - imgDims.width) / 2,
+        y:      posY + (sigH - imgDims.height) / 2,
+        width:  imgDims.width,
+        height: imgDims.height,
     });
-} catch (imgErr) {
+    } catch (imgErr) {
     console.warn('Image signature non intégrable:', imgErr.message);
     page.drawText(signerName || 'Signature', {
-    x: posX + 10, y: posY + 30,
-    size: 28, font: boldFont, color: rgb(0.05, 0.1, 0.5),
+        x: posX + 10, y: posY + 30,
+        size: 28, font: boldFont, color: rgb(0.05, 0.1, 0.5),
     });
-}
+    }
 } else {
     const displayText = (signatureText || signerName || 'Signature').substring(0, 25);
     const fontSize    = displayText.length > 15 ? 22 : 28;

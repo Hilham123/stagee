@@ -111,81 +111,57 @@ const courrierController = {
       const colWidth  = width - margin * 2;
       let   cursorY   = height - margin;
 
-      // ── EN-TÊTE ──────────────────────────────────────────────────
-      page.drawRectangle({
-        x: 0, y: height - 100,
-        width, height: 100,
-        color: rgb(0.12, 0.22, 0.39),
+      // ── EN-TÊTE style IT Integration ─────────────────────────────
+      // Bloc droite : BURKINA FASO + destinataire
+      page.drawText('BURKINA FASO', {
+        x: width - margin - 160, y: height - 60,
+        size: 11, font: fontBold, color: rgb(0.1, 0.1, 0.1),
       });
-      page.drawText('IT INTEGRATION SARL', {
-        x: margin, y: height - 45,
-        size: 20, font: fontBold, color: rgb(1, 1, 1),
+      page.drawText('La Patrie ou la Mort, Nous Vaincrons', {
+        x: width - margin - 160, y: height - 75,
+        size: 8, font: fontRegular, color: rgb(0.2, 0.2, 0.2),
       });
-      page.drawText('Gestion Électronique des Documents', {
-        x: margin, y: height - 68,
-        size: 11, font: fontRegular, color: rgb(0.8, 0.85, 0.95),
+      page.drawText('Le Directeur Général de IT INTEGRATION', {
+        x: width - margin - 160, y: height - 100,
+        size: 9, font: fontBold, color: rgb(0.1, 0.1, 0.1),
       });
-      page.drawText(`Réf : ${courrier.reference}`, {
-        x: width - margin - 160, y: height - 45,
-        size: 10, font: fontBold, color: rgb(1, 1, 1),
+      page.drawText('A', {
+        x: width - margin - 100, y: height - 115,
+        size: 10, font: fontBold, color: rgb(0.1, 0.1, 0.1),
       });
-      page.drawText(`Date : ${new Date().toLocaleDateString('fr-FR')}`, {
-        x: width - margin - 160, y: height - 65,
-        size: 10, font: fontRegular, color: rgb(0.8, 0.85, 0.95),
+      page.drawText(courrier.destinataire, {
+        x: width - margin - 160, y: height - 130,
+        size: 9, font: fontRegular, color: rgb(0.1, 0.1, 0.1),
       });
 
-      cursorY = height - 130;
+      // Objet
+      cursorY = height - 180;
+      page.drawText(`Objet : ${courrier.objet}`, {
+        x: margin, y: cursorY,
+        size: 11, font: fontBold, color: rgb(0.1, 0.1, 0.1),
+      });
+      cursorY -= 40;
 
-      // ── MÉTADONNÉES ───────────────────────────────────────────────
-      const drawMeta = (label, value, y) => {
-        page.drawText(`${label} :`, {
-          x: margin, y,
-          size: 10, font: fontBold, color: rgb(0.2, 0.2, 0.2),
-        });
-        page.drawText(value || '-', {
-          x: margin + 110, y,
-          size: 10, font: fontRegular, color: rgb(0.2, 0.2, 0.2),
-        });
-      };
-
-      drawMeta('Expéditeur',  courrier.expediteur,  cursorY);  cursorY -= 20;
-      drawMeta('Destinataire', courrier.destinataire, cursorY); cursorY -= 20;
-      drawMeta('Objet',       courrier.objet,        cursorY); cursorY -= 20;
-      drawMeta('Priorité',    courrier.priorite,     cursorY); cursorY -= 20;
-
-      // Ligne séparatrice
-      cursorY -= 10;
+      // Ligne séparatrice légère
       page.drawLine({
-        start: { x: margin, y: cursorY },
-        end:   { x: width - margin, y: cursorY },
-        thickness: 1, color: rgb(0.7, 0.7, 0.7),
+        start: { x: margin, y: cursorY + 20 },
+        end:   { x: width - margin, y: cursorY + 20 },
+        thickness: 0.5, color: rgb(0.8, 0.8, 0.8),
       });
-      cursorY -= 25;
 
       // ── CORPS DU COURRIER ─────────────────────────────────────────
-      page.drawText('Contenu du courrier :', {
-        x: margin, y: cursorY,
-        size: 11, font: fontBold, color: rgb(0.12, 0.22, 0.39),
-      });
-      cursorY -= 20;
-
-      // Découper le corps en lignes de ~85 caractères
-      const words    = corps.trim().split(' ');
-      const lines    = [];
-      let   currentLine = '';
+      const words = corps.trim().split(' ');
+      const lines = [];
+      let currentLine = '';
       for (const word of words) {
         const test = currentLine ? `${currentLine} ${word}` : word;
-        if (test.length > 85) {
-          lines.push(currentLine);
-          currentLine = word;
-        } else {
-          currentLine = test;
-        }
+        if (test.length > 85) { lines.push(currentLine); currentLine = word; }
+        else { currentLine = test; }
       }
       if (currentLine) lines.push(currentLine);
 
       for (const line of lines) {
-        if (cursorY < 150) break; // Marge basse
+        if (cursorY < 150) break;
         page.drawText(line, {
           x: margin, y: cursorY,
           size: 11, font: fontRegular, color: rgb(0.15, 0.15, 0.15),
@@ -206,16 +182,23 @@ const courrierController = {
         borderWidth: 1,
       });
 
-      // ── PIED DE PAGE ──────────────────────────────────────────────
+      // ── PIED DE PAGE style IT Integration ────────────────────────
       page.drawLine({
-        start: { x: margin, y: 40 },
-        end:   { x: width - margin, y: 40 },
+        start: { x: 0, y: 55 }, end: { x: width, y: 55 },
         thickness: 0.5, color: rgb(0.7, 0.7, 0.7),
       });
-      page.drawText('IT Integration SARL — Document généré par le système GED', {
-        x: margin, y: 25,
-        size: 8, font: fontRegular, color: rgb(0.5, 0.5, 0.5),
-      });
+      page.drawText(
+        'IFU : 00123277B, RCCM : BFOUA2019B5837, Régime d\'Imposition : RNI, Division fiscale : DME-CENTRE II 08',
+        { x: 30, y: 42, size: 6.5, font: fontRegular, color: rgb(0.3, 0.3, 0.3) }
+      );
+      page.drawText(
+        'Coris Bank : 01010 043747224101-53, secteur 48 08 BP 11720 Ouagadougou 08  TEL : (00226) 76315094 / 65881099 / 51231329',
+        { x: 30, y: 32, size: 6.5, font: fontRegular, color: rgb(0.3, 0.3, 0.3) }
+      );
+      page.drawText(
+        'site web: http://itintegration.net  Email : atiendrebeogo@itintegration.net',
+        { x: 30, y: 22, size: 6.5, font: fontRegular, color: rgb(0.3, 0.3, 0.3) }
+      );
 
       // ── EXPORT ET UPLOAD ALFRESCO ─────────────────────────────────
       const pdfBytes   = await pdfDoc.save();
