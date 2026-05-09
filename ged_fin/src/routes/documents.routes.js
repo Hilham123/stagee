@@ -3,7 +3,7 @@ const multer  = require('multer');
 const router  = express.Router();
 const documentController = require('../controllers/document.controller');
 const { authenticate }   = require('../middlewares/auth.middleware');
-const { isAdmin, isManager, isEmployee, isViewer } = require('../middlewares/role.middleware');
+const { isAdmin, isManager, isEmployee } = require('../middlewares/role.middleware');
 // CONFIGURATION MULTER
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -29,16 +29,16 @@ const upload = multer({
 
 // ROUTES DOCUMENTS
 // Recherche (avant /:id pour éviter les conflits de routing)
-router.get('/search',          authenticate, isViewer,   documentController.searchDocuments);
+router.get('/search',          authenticate, isEmployee,   documentController.searchDocuments);
 
-// ✅ Récupérer les archives des documents (uniquement)
-router.get('/archives/list',   authenticate, isViewer,   documentController.getDocumentArchives);
+// Récupérer les archives des documents (uniquement)
+router.get('/archives/list',   authenticate, isEmployee,   documentController.getDocumentArchives);
 
 // Lister tous les documents (actifs - SANS archives ni courriers)
-router.get('/',                authenticate, isViewer,   documentController.listDocuments);
+router.get('/',                authenticate, isEmployee,   documentController.listDocuments);
 
 // Récupérer un document par son ID
-router.get('/:id',             authenticate, isViewer,   documentController.getDocument);
+router.get('/:id',             authenticate, isEmployee,   documentController.getDocument);
 
 // Uploader un nouveau document
 router.post('/upload',         authenticate, isEmployee, upload.single('file'), documentController.uploadDocument);
@@ -50,10 +50,10 @@ router.put('/:id',             authenticate, isManager,  documentController.upda
 router.delete('/:id',          authenticate, isAdmin,    documentController.deleteDocument);
 
 // Télécharger le fichier
-router.get('/:id/download',    authenticate, isViewer,   documentController.downloadDocument);
+router.get('/:id/download',    authenticate, isEmployee,   documentController.downloadDocument);
 
 // Lister les versions
-router.get('/:id/versions',    authenticate, isViewer,   documentController.getVersions);
+router.get('/:id/versions',    authenticate, isEmployee,   documentController.getVersions);
 
 // Modifier la durée de conservation
 router.put('/:id/retention', authenticate, isAdmin, documentController.updateRetention);

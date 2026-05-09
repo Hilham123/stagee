@@ -2,17 +2,17 @@ const express = require('express');
 const router  = express.Router();
 const workflowController = require('../controllers/workflow.controller');
 const { authenticate }   = require('../middlewares/auth.middleware');
-const { isAdmin, isManager, isEmployee, isViewer } = require('../middlewares/role.middleware');
+const { isAdmin, isManager, isEmployee } = require('../middlewares/role.middleware');
 
 // ROUTES WORKFLOWS
 // Lister tous les workflows (filtré selon le rôle)
-router.get('/',                     authenticate, isViewer,   workflowController.getWorkflows);
+router.get('/',                     authenticate, isEmployee, workflowController.getWorkflows);
+
+// Récupérer les archives — DOIT être avant /:id pour ne pas être capturé comme un ID
+router.get('/archives/list',        authenticate, isEmployee, workflowController.getArchives);
 
 // Récupérer un workflow par ID
-router.get('/:id',                  authenticate, isViewer,   workflowController.getWorkflow);
-
-// Récupérer les archives (documents archivés uniquement)
-router.get('/archives/list',        authenticate, isViewer,   workflowController.getArchives);
+router.get('/:id',                  authenticate, isEmployee, workflowController.getWorkflow);
 
 // Soumettre un document à la validation (EMPLOYEE+)
 router.post('/submit',              authenticate, isEmployee, workflowController.submitDocument);

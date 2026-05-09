@@ -86,7 +86,7 @@
 
       <div class="card mt-16">
         <div v-if="loading" class="loading">
-          <Loader :size="24" class="spin" /> Chargement...
+          <LoaderCircle :size="24" class="spin" /> Chargement...
         </div>
         <table v-else class="table">
           <thead>
@@ -188,7 +188,7 @@
 
       <div class="card mt-16">
         <div v-if="loadingCourriers" class="loading">
-          <Loader :size="24" class="spin" /> Chargement...
+          <LoaderCircle :size="24" class="spin" /> Chargement...
         </div>
         <table v-else class="table">
           <thead>
@@ -464,22 +464,17 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import api from '../services/api'
 import SidebarNav      from '../components/SidebarNav.vue'
 import BaseModal       from '../components/BaseModal.vue'
 import SignatureCachet from '../components/SignatureCachet.vue'
 import DocumentPreview from '../components/DocumentPreview.vue'
 import {
   Archive, FileText, ShieldCheck, Clock, Info,
-  Search, RotateCcw, Loader, Eye, Download, Mail, PenLine,
+  Search, RotateCcw, LoaderCircle, Eye, Download, Mail, PenLine,
   CheckCircle, XCircle, ChevronLeft, ChevronRight,
   ArrowDownCircle, ArrowUpCircle, Globe, Building2
 } from 'lucide-vue-next'
-
-const api = () => axios.create({
-  baseURL: 'http://localhost:3000/api',
-  headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-})
 
 const activeMainTab = ref('documents')
 const stats = ref({ totalDocs: 0, totalCourriers: 0, signed: 0, thisMonth: 0 })
@@ -585,7 +580,7 @@ const loadArchives = async (page = 1) => {
     if (filters.value.category) params.category = filters.value.category
     if (filters.value.search)   params.search   = filters.value.search
     // ✅ CORRIGÉ : bonne route
-    const res  = await api().get('/documents/archives/list', { params })
+    const res  = await api.get('/documents/archives/list', { params })
     let docs   = res.data.data || []
     if (filters.value.signed !== '')
       docs = docs.filter(d => String(d.isSigned) === filters.value.signed)
@@ -615,7 +610,7 @@ const handleDocRetention = async () => {
     return
   }
   try {
-    await api().put(`/documents/${retentionDoc.value.id}/retention`, {
+    await api.put(`/documents/${retentionDoc.value.id}/retention`, {
       retentionYears: parseInt(newRetentionYears.value)
     })
     showRetentionModal.value = false
@@ -633,7 +628,7 @@ const loadCourrierArchives = async (page = 1) => {
     if (courrierFilters.value.nature) params.nature = courrierFilters.value.nature
     if (courrierFilters.value.search) params.search = courrierFilters.value.search
     // ✅ CORRIGÉ : bonne route
-    const res = await api().get('/courriers/archives/list', { params })
+    const res = await api.get('/courriers/archives/list', { params })
     courrierArchives.value        = res.data.courriers || []
     courrierPagination.value      = res.data.pagination || { page: 1, pages: 1 }
     stats.value.totalCourriers    = res.data.pagination?.total || courrierArchives.value.length
@@ -655,7 +650,7 @@ const openCourrierRetention = (c) => {
 
 const handleCourrierRetention = async () => {
   try {
-    await api().put(`/courriers/${retentionCourrier.value.id}/retention`, {
+    await api.put(`/courriers/${retentionCourrier.value.id}/retention`, {
       retentionYears: newCourrierRetentionYears.value
     })
     showCourrierRetentionModal.value = false
@@ -673,7 +668,7 @@ const openDetail = (doc) => {
 
 const downloadDoc = async (doc) => {
   try {
-    const res  = await api().get(`/documents/${doc.id}/download`, { responseType: 'blob' })
+    const res  = await api.get(`/documents/${doc.id}/download`, { responseType: 'blob' })
     const url  = window.URL.createObjectURL(new Blob([res.data]))
     const link = document.createElement('a')
     link.href  = url
@@ -684,7 +679,7 @@ const downloadDoc = async (doc) => {
 
 const openCachet = async (doc) => {
   try {
-    const res = await api().get(`/signatures/document/${doc.id}`)
+    const res = await api.get(`/signatures/document/${doc.id}`)
     const sig = res.data.data?.[0]
     if (!sig) return alert('Aucune signature trouvée')
     cachetData.value = {
@@ -705,7 +700,7 @@ const openCourrierDetail = async (c) => {
   courrierHistorique.value      = []
   showCourrierDetailModal.value = true
   try {
-    const res = await api().get(`/courriers/${c.id}/historique`)
+    const res = await api.get(`/courriers/${c.id}/historique`)
     courrierHistorique.value = res.data.data || []
   } catch (e) { console.error(e) }
 }

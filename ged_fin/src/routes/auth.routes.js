@@ -9,10 +9,10 @@ const { isAdmin } = require('../middlewares/role.middleware');
 // Connexion
 router.post('/login', authController.login);
 
-// Inscription (réservée à l'admin en production)
-router.post('/register', authController.register);
-
 // ROUTES PROTÉGÉES (token requis)
+// Inscription — réservée à l'admin uniquement
+router.post('/register', authenticate, isAdmin, authController.register);
+
 // Récupérer son propre profil
 router.get('/me', authenticate, authController.getMe);
 

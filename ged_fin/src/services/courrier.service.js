@@ -440,6 +440,13 @@ as:         'document',
 attributes: ['id', 'title', 'fileName'],
 required:   false,
 },
+
+{
+  model:    Courrier,
+  as:       'reponses',
+  attributes: ['id', 'statut'],
+  required: false,
+},
 {
 model:      Service,
 as:         'serviceDestinataire',
@@ -555,32 +562,67 @@ async ajouterHistorique(courrierId, userId, action, details) {
 await CourrierHistorique.create({ courrierId, userId, action, details });
 },
 async signerCourrier(id, userId, signatureOptions = {}) {
-const courrier = await Courrier.findByPk(id)
-if (!courrier) throw new Error('Courrier introuvable.')
-if (courrier.isSigned) throw new Error('Ce courrier est déjà signé.')
-if (!['EN_APPROBATION', 'APPROUVE', 'EN_TRAITEMENT'].includes(courrier.statut))
-throw new Error('Le courrier doit être en traitement ou en approbation pour être signé.')
+  const courrier = await Courrier.findByPk(id)
+  if (!courrier) throw new Error('Courrier introuvable.')
+  if (courrier.isSigned) throw new Error('Ce courrier est déjà signé.')
+  if (!['EN_APPROBATION', 'APPROUVE', 'EN_TRAITEMENT'].includes(courrier.statut))
+    throw new Error('Le courrier doit être en traitement ou en approbation pour être signé.')
 
-const signer    = await User.findByPk(userId)
-const timestamp = new Date().toISOString()
+  const signer    = await User.findByPk(userId)
+  const timestamp = new Date().toISOString()
 
-await courrier.update({
-isSigned:      true,
-signedAt:      timestamp,
-signedBy:      userId,
-signatureData: {
-signerName:    `${signer.firstName} ${signer.lastName}`,
-signerRole:    signer.roleName,
-signedAt:      timestamp,
-signatureType: signatureOptions.signatureType || 'text',
-signatureText: signatureOptions.signatureText || `${signer.firstName} ${signer.lastName}`,
-},
-})
+  // Embarquer la signature dans le PDF Alfresco si disponible
+  if (courrier.alfrescoPdfNodeId) {
+    try {
+      const alfrescoService  = require('./alfresco.service')
+      const signatureService = require('./signature.service')
+
+      const { data } = await alfrescoService.downloadDocument(courrier.alfrescoPdfNodeId)
+      const pdfBytes = await signatureService.decompressIfNeeded(data)
+
+      if (pdfBytes[0] === 37 && pdfBytes[1] === 80) {
+        const signedPdfBytes = await signatureService.embedSignatureInPdf(pdfBytes, {
+          x:              signatureOptions.x,
+          y:              signatureOptions.y,
+          pageIndex:      signatureOptions.pageIndex,
+          signerName:     `${signer.firstName} ${signer.lastName}`,
+          signerRole:     signer.roleName,
+          signedAt:       timestamp,
+          signatureText:  signatureOptions.signatureText  || `${signer.firstName} ${signer.lastName}`,
+          signatureType:  signatureOptions.signatureType  || 'text',
+          signatureImage: signatureOptions.signatureImage || null,
+        })
+
+        await alfrescoService.updateDocumentContent(
+          courrier.alfrescoPdfNodeId,
+          Buffer.from(signedPdfBytes),
+          'application/pdf',
+          true
+        )
+        console.log('✅ Signature embarquée dans le PDF du courrier')
+      }
+    } catch (e) {
+      console.warn('⚠️ Impossible d\'embarquer la signature PDF courrier:', e.message)
+    }
+  }
+
+  await courrier.update({
+    isSigned:      true,
+    signedAt:      timestamp,
+    signedBy:      userId,
+    signatureData: {
+      signerName:    `${signer.firstName} ${signer.lastName}`,
+      signerRole:    signer.roleName,
+      signedAt:      timestamp,
+      signatureType: signatureOptions.signatureType || 'text',
+      signatureText: signatureOptions.signatureText || `${signer.firstName} ${signer.lastName}`,
+    },
+  })
+
 
 await this.ajouterHistorique(id, userId, 'SIGNATURE', `Courrier signé par ${signer.firstName} ${signer.lastName}`)
-return courrier
+  return courrier
 },
-
 async getHistorique(courrierId) {
 return CourrierHistorique.findAll({
 where: { courrierId },
@@ -601,6 +643,8 @@ const whereBase = user.role === 'ADMIN' ? {} : {
 { serviceExpediteurId:   user.serviceId },
 ],
 };
+
+
 
 const [totalEntrants, totalSortants, enTraitement, urgents] = await Promise.all([
 Courrier.count({ where: { ...whereBase, type: 'ENTRANT' } }),

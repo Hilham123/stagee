@@ -35,7 +35,7 @@
       <!-- Liste workflows -->
       <div class="card mt-16">
         <div v-if="loading" class="loading">
-          <Loader :size="24" class="spin" /> Chargement...
+          <LoaderCircle :size="24" class="spin" /> Chargement...
         </div>
         <table v-else class="table">
           <thead>
@@ -259,8 +259,7 @@ import { workflowService } from '../services/api'
 import SidebarNav      from '../components/SidebarNav.vue'
 import BaseModal       from '../components/BaseModal.vue'
 import DocumentPreview from '../components/DocumentPreview.vue'
-import { GitBranch, Loader, RotateCcw, UserCheck, Eye, FileText, ThumbsUp, ThumbsDown, Archive, X } from 'lucide-vue-next'
-
+import { GitBranch, LoaderCircle, RotateCcw, UserCheck, Eye, FileText, ThumbsUp, ThumbsDown, Archive, X, Info, Check } from 'lucide-vue-next'
 const authStore = useAuthStore()
 const workflows = ref([])
 const loading   = ref(true)

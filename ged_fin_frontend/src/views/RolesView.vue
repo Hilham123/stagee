@@ -130,10 +130,7 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import SidebarNav from '../components/SidebarNav.vue'
 import BaseModal  from '../components/BaseModal.vue'
-import {
-Shield, Plus, Loader, Pencil, Trash2,
-Users, Lock
-} from 'lucide-vue-next'
+import {Shield, Plus, Loader, Pencil, Trash2,Users, Lock,Save, CheckCircle, XCircle} from 'lucide-vue-next'
 
 const roles           = ref([])
 const loading         = ref(true)

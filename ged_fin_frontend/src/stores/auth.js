@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { authService } from '../services/api'
+import api from '../services/api'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -104,11 +105,8 @@ hasSavedSignature: (state) =>
 
     async saveSignature(signatureImage, signatureText, signatureFont) {
   try {
-    const axios = (await import('axios')).default
-    await axios.put('http://localhost:3000/api/auth/signature', {
+    await api.put('/auth/signature', {
       signatureImage, signatureText, signatureFont
-    }, {
-      headers: { Authorization: `Bearer ${this.token}` }
     })
     // Mettre à jour le user local
     this.user = {

@@ -16,7 +16,7 @@
 <FileCheck :size="18" class="title-icon" /> Documents approuvés à signer
 </h2>
 <div v-if="loadingDocs" class="loading">
-<Loader :size="20" class="spin" /> Chargement...
+<LoaderCircle :size="20" class="spin" /> Chargement...
 </div>
 <table v-else class="table">
 <thead>
@@ -62,7 +62,7 @@
 <ClipboardList :size="18" class="title-icon" /> Toutes les signatures
 </h2>
 <div v-if="loadingSigs" class="loading">
-<Loader :size="20" class="spin" /> Chargement...
+<LoaderCircle :size="20" class="spin" /> Chargement...
 </div>
 <table v-else class="table">
 <thead>
@@ -223,7 +223,7 @@ Document : <strong>{{ docToSign?.title }}</strong>
 </p>
 
 <div v-if="loadingPdf" class="loading">
-<Loader :size="20" class="spin" /> Chargement du document...
+<LoaderCircle :size="20" class="spin" /> Chargement du document...
 </div>
 
 <SignaturePad
@@ -250,8 +250,7 @@ import BaseModal       from '../components/BaseModal.vue'
 import DocumentPreview from '../components/DocumentPreview.vue'
 import SignaturePad from '../components/SignaturePad.vue'
 import axios from 'axios'
-import {PenLine, FileCheck, ClipboardList, Loader, FileText, CheckCircle, XCircle, Eye, ShieldCheck, ShieldOff} from 'lucide-vue-next'
-
+import { PenLine, FileCheck, ClipboardList, LoaderCircle, FileText, CheckCircle, XCircle, Eye, ShieldCheck, ShieldOff, Info, AlertTriangle } from 'lucide-vue-next'
 const api = () => axios.create({
   baseURL: 'http://localhost:3000/api',
   headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }

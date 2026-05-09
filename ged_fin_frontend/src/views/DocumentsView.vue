@@ -51,7 +51,7 @@
 <!-- Tableau -->
 <div class="card mt-16">
 <div v-if="loading" class="loading">
-    <Loader :size="24" class="spin" /> Chargement...
+    <LoaderCircle :size="24" class="spin" /> Chargement...
 </div>
 <table v-else class="table">
     <thead>
@@ -202,7 +202,7 @@
 <div v-if="uploadError" class="error-message">{{ uploadError }}</div>
 <template #actions>
 <button class="btn btn-primary" @click="handleUpload" :disabled="uploading">
-    <Loader v-if="uploading" :size="15" class="spin" />
+    <LoaderCircle v-if="uploading" :size="15" class="spin" />
     <Upload v-else :size="15" />
     {{ uploading ? 'Upload...' : 'Uploader' }}
 </button>
@@ -253,7 +253,7 @@ import SidebarNav       from '../components/SidebarNav.vue'
 import BaseModal        from '../components/BaseModal.vue'
 import SignatureCachet  from '../components/SignatureCachet.vue'
 import DocumentPreview  from '../components/DocumentPreview.vue'
-import {FileText, Eye, Download, Send, Trash2, Search, RotateCcw,Plus, CheckCircle, XCircle, ChevronLeft, ChevronRight,Loader, Upload, History, PenLine, ShieldCheck, AlertTriangle, Info} from 'lucide-vue-next'
+import {FileText, Eye, Download, Send, Trash2, Search, RotateCcw,Plus, CheckCircle, XCircle, ChevronLeft, ChevronRight,LoaderCircle, Upload, History, PenLine, ShieldCheck, AlertTriangle, Info} from 'lucide-vue-next'
 
 
 const pdfBytesForSign = ref(null)

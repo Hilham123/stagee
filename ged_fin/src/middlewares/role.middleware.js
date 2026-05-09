@@ -43,6 +43,5 @@ return (req, res, next) => {
 const isAdmin    = authorize(['ADMIN'])
 const isManager  = authorize(['ADMIN', 'MANAGER'])
 const isEmployee = authorize(['ADMIN', 'MANAGER', 'EMPLOYEE'])
-const isViewer   = authorize(['ADMIN', 'MANAGER', 'EMPLOYEE'])
 
-module.exports = { authorize, hasPermission, isAdmin, isManager, isEmployee, isViewer }
+module.exports = { authorize, hasPermission, isAdmin, isManager, isEmployee }

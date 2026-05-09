@@ -98,7 +98,7 @@
       </p>
 
       <div v-if="pdfLoading" class="pdf-loading">
-        <Loader :size="20" class="spin" /> Chargement du PDF...
+      <LoaderCircle :size="20" class="spin" /> Chargement du PDF...
       </div>
       <div v-else-if="pdfError" class="pdf-error">
         <FileX :size="24" color="#dc2626" /> {{ pdfError }}
@@ -152,9 +152,8 @@ import { useAuthStore } from '../stores/auth'
 import {
   PenLine, Type, Trash2, Check, RotateCcw,
   ChevronLeft, ChevronRight, MousePointerClick,
-  Loader, FileX, BookMarked, CheckCircle
+  LoaderCircle, FileX, BookMarked, CheckCircle
 } from 'lucide-vue-next'
-
 const props = defineProps({
   pdfBytes:   { type: String, required: false, default: '' },
   signerName: { type: String, default: '' },

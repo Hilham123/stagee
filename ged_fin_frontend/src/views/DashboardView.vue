@@ -13,7 +13,7 @@
 
     <!-- Chargement -->
     <div v-if="loading" class="loading">
-    <Loader :size="24" class="spin" /> Chargement des statistiques...
+    <LoaderCircle :size="24" class="spin" /> Chargement des statistiques...
     </div>
 
     <template v-else-if="stats">
@@ -113,7 +113,7 @@ import SidebarNav from '../components/SidebarNav.vue'
 import StatCards  from '../components/StatCards.vue'
 import { Bar, Pie } from 'vue-chartjs'
 import {Chart as ChartJS, CategoryScale, LinearScale, BarElement,ArcElement, Title, Tooltip, Legend} from 'chart.js'
-import {LayoutDashboard, Loader, Clock, AlertTriangle,Users, FileText, PenLine, BarChart2, PieChart,ClipboardList, CheckCircle, XCircle,} from 'lucide-vue-next'
+import {LayoutDashboard, LoaderCircle, Clock, AlertTriangle,Users, FileText, PenLine, BarChart2, PieChart,ClipboardList, CheckCircle, XCircle,} from 'lucide-vue-next'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend)
 

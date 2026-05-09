@@ -72,7 +72,7 @@
 
       <div class="card mt-16">
         <div v-if="loading" class="loading">
-          <Loader :size="24" class="spin" /> Chargement...
+          <LoaderCircle :size="24" class="spin" /> Chargement...
         </div>
         <table v-else class="table">
           <thead>
@@ -241,7 +241,7 @@
           </button>
         </div>
         <div v-if="loadingPdfPreview" class="pdf-loading-banner">
-          <Loader :size="16" class="spin" /> Chargement du PDF...
+          <LoaderCircle :size="16" class="spin" /> Chargement du PDF...
         </div>
         <iframe
           v-else-if="showPdfInDetail && pdfPreviewUrl"
@@ -402,7 +402,7 @@
       <div class="form-group" v-if="dispatchForm.serviceDestinataireId">
         <label><User :size="14" style="display:inline-flex;vertical-align:middle;margin-right:4px" /> Assigner à une personne (optionnel)</label>
         <div v-if="loadingMembres" class="membres-loading">
-          <Loader :size="14" class="spin" /> Chargement des membres...
+          <LoaderCircle :size="14" class="spin" /> Chargement des membres...
         </div>
         <select v-else v-model="dispatchForm.assigneA">
           <option value="">— Aucune personne spécifique (tout le service) —</option>
@@ -485,7 +485,7 @@
 
       <template #actions>
         <button class="btn btn-primary" :disabled="!corpsRedige.trim() || generatingPdf" @click="handleGenererPdf">
-          <Loader v-if="generatingPdf" :size="15" class="spin" />
+          <LoaderCircle v-if="generatingPdf" :size="15" class="spin" />
           <FileText v-else :size="15" />
           {{ generatingPdf ? 'Génération...' : 'Générer le PDF & Signer' }}
         </button>
@@ -502,7 +502,7 @@
       </p>
 
       <div v-if="loadingCourrierPdf" class="pdf-loading-banner">
-        <Loader :size="16" class="spin" /> Chargement du document...
+        <LoaderCircle :size="16" class="spin" /> Chargement du document...
       </div>
 
       <div v-else-if="!courrierPdfBytes && !loadingCourrierPdf" class="no-pdf-banner">
@@ -592,10 +592,11 @@ import BaseModal     from '../components/BaseModal.vue'
 import StatCards     from '../components/StatCards.vue'
 import SignaturePad  from '../components/SignaturePad.vue'
 import {
-  Mail, Eye, Trash2, Search, RotateCcw, Plus, RefreshCw, Pencil,
-  ChevronLeft, ChevronRight, Loader, ArrowDownCircle, ArrowUpCircle,
-  Globe, Building2, Archive, User, Send, CheckCircle, ThumbsUp, Reply,
-  PenLine, X, FileText
+  Mail, MailOpen, MailCheck, Eye, Trash2, Search, RotateCcw, Plus,
+  RefreshCw, Pencil, ChevronLeft, ChevronRight, LoaderCircle,
+  ArrowDownCircle, ArrowUpCircle, Globe, Building2, Archive, User,
+  Send, CheckCircle, ThumbsUp, Reply, PenLine, X, FileText,
+  Clock, AlertTriangle, Paperclip, Save, Check, MessageSquare
 } from 'lucide-vue-next'
 
 const authStore  = useAuthStore()
@@ -849,26 +850,25 @@ const openSigner = async (c) => {
   selectedCourrier.value = c
   courrierPdfBytes.value = ''
 
-  // Priorité au PDF généré (alfrescoPdfNodeId) sinon document joint
   const nodeId = c.alfrescoPdfNodeId || null
   const docId  = c.documentId || c.document?.id || null
 
   if (nodeId || docId) {
     loadingCourrierPdf.value = true
     try {
-      if (nodeId) {
-        // Charger le PDF généré depuis Alfresco directement via le backend
-        const res = await api.get(`/courriers/${c.id}/pdf`, { responseType: 'arraybuffer' })
-        courrierPdfBytes.value = btoa(
-          new Uint8Array(res.data).reduce((data, byte) => data + String.fromCharCode(byte), '')
-        )
-      } else {
-        // Charger le document joint classique
-        const res = await api.get(`/documents/${docId}/download`, { responseType: 'arraybuffer' })
-        courrierPdfBytes.value = btoa(
-          new Uint8Array(res.data).reduce((data, byte) => data + String.fromCharCode(byte), '')
-        )
+      const url = nodeId
+        ? `/courriers/${c.id}/pdf`
+        : `/documents/${docId}/download`
+
+      const res = await api.get(url, { responseType: 'arraybuffer' })
+
+      const bytes = new Uint8Array(res.data)
+      const chunks = []
+      for (let i = 0; i < bytes.length; i += 8192) {
+        chunks.push(String.fromCharCode(...bytes.subarray(i, i + 8192)))
       }
+      courrierPdfBytes.value = btoa(chunks.join(''))
+
     } catch (e) {
       console.error('Impossible de charger le PDF', e)
       courrierPdfBytes.value = ''

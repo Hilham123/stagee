@@ -6,133 +6,133 @@
 <!-- Header -->
 <div class="page-header">
 <div>
-    <h1><Users :size="28" class="title-icon" /> Utilisateurs</h1>
-    <p>Gérez les membres et leurs rôles</p>
+<h1><Users :size="28" class="title-icon" /> Utilisateurs</h1>
+<p>Gérez les membres et leurs rôles</p>
 </div>
 <button class="btn btn-primary" @click="showCreateModal = true">
-    <Plus :size="16" /> Nouvel utilisateur
+<Plus :size="16" /> Nouvel utilisateur
 </button>
 </div>
 
 <!-- Filtres -->
 <div class="card">
 <div class="filters-row">
-    <div class="form-group">
-    <label>Rôle</label>
-    <select v-model="filters.role" @change="loadUsers()">
-        <option value="">Tous</option>
-        <option v-for="r in rolesList" :key="r.id" :value="r.name">
-        {{ r.label }}
-        </option>
-    </select>
-    </div>
-    <div class="form-group">
-    <label>Recherche</label>
-    <input v-model="filters.search" type="text"
-        placeholder="Nom, prénom, email..." @keyup.enter="loadUsers()" />
-    </div>
-    <div style="display:flex; gap:8px; align-items:flex-end; margin-bottom:0">
-    <button class="btn btn-secondary" @click="loadUsers()" title="Rechercher">
-        <Search :size="15" />
-    </button>
-    <button class="btn btn-secondary" @click="resetFilters" title="Réinitialiser">
-        <RotateCcw :size="15" />
-    </button>
-    </div>
+<div class="form-group">
+<label>Rôle</label>
+<select v-model="filters.role" @change="loadUsers()">
+    <option value="">Tous</option>
+    <option v-for="r in rolesList" :key="r.id" :value="r.name">
+    {{ r.label }}
+    </option>
+</select>
+</div>
+<div class="form-group">
+<label>Recherche</label>
+<input v-model="filters.search" type="text"
+    placeholder="Nom, prénom, email..." @keyup.enter="loadUsers()" />
+</div>
+<div style="display:flex; gap:8px; align-items:flex-end; margin-bottom:0">
+<button class="btn btn-secondary" @click="loadUsers()" title="Rechercher">
+    <Search :size="15" />
+</button>
+<button class="btn btn-secondary" @click="resetFilters" title="Réinitialiser">
+    <RotateCcw :size="15" />
+</button>
+</div>
 </div>
 </div>
 
 <!-- Tableau -->
 <div class="card mt-16">
 <div v-if="loading" class="loading">
-    <Loader :size="24" class="spin" /> Chargement...
+<LoaderCircle :size="24" class="spin" /> Chargement...
 </div>
 <table v-else class="table">
-    <thead>
-    <tr>
-        <th>Utilisateur</th>
-        <th>Email</th>
-        <th>Rôle</th>
-        <th>Service</th>
-        <th>Directeur</th>
-        <th>Statut</th>
-        <th>Créé le</th>
-        <th>Actions</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr v-if="users.length === 0">
-        <td colspan="8" style="text-align:center; color:#999">Aucun utilisateur trouvé</td>
-    </tr>
-    <tr v-for="u in users" :key="u.id">
-        <td>
-        <div class="user-cell">
-            <div class="user-avatar-sm" :style="`background: ${getRoleColor(u)}`">
-            {{ initials(u) }}
-            </div>
-            <span><strong>{{ u.firstName }} {{ u.lastName }}</strong></span>
+<thead>
+<tr>
+    <th>Utilisateur</th>
+    <th>Email</th>
+    <th>Rôle</th>
+    <th>Service</th>
+    <th>Directeur</th>
+    <th>Statut</th>
+    <th>Créé le</th>
+    <th>Actions</th>
+</tr>
+</thead>
+<tbody>
+<tr v-if="users.length === 0">
+    <td colspan="8" style="text-align:center; color:#999">Aucun utilisateur trouvé</td>
+</tr>
+<tr v-for="u in users" :key="u.id">
+    <td>
+    <div class="user-cell">
+        <div class="user-avatar-sm" :style="`background: ${getRoleColor(u)}`">
+        {{ initials(u) }}
         </div>
-        </td>
-        <td>{{ u.email }}</td>
-        <td>
-        <span class="badge" :style="`background: ${getRoleColor(u)}22; color: ${getRoleColor(u)}`">
-            {{ u.userRole?.label || u.roleName || '-' }}
-        </span>
-        </td>
-        <td>
-        <span v-if="u.service" class="service-badge">
-            <Building2 :size="11" /> {{ u.service.nom }}
-        </span>
-        <span v-else class="text-muted">—</span>
-        </td>
-        <!-- Badge Directeur — visible uniquement pour les Managers -->
-        <td>
-        <span v-if="(u.userRole?.name || u.roleName) === 'MANAGER'" 
-            :class="`directeur-badge ${u.isDirecteur ? 'directeur-oui' : 'directeur-non'}`">
-            <Crown :size="11" />
-            {{ u.isDirecteur ? 'Directeur' : 'Manager' }}
-        </span>
-        <span v-else class="text-muted">—</span>
-        </td>
-        <td>
-        <span :class="`badge ${u.isActive ? 'badge-approuve' : 'badge-rejete'}`">
-            {{ u.isActive ? 'Actif' : 'Inactif' }}
-        </span>
-        </td>
-        <td>{{ formatDate(u.createdAt) }}</td>
-        <td>
-        <div class="actions">
-            <button class="btn-action btn-edit" @click="openEdit(u)" title="Modifier">
-            <Pencil :size="15" />
-            </button>
-            <button class="btn-action"
-            :class="u.isActive ? 'btn-warning' : 'btn-success'"
-            @click="toggleActive(u)"
-            :title="u.isActive ? 'Désactiver' : 'Activer'">
-            <UserCheck v-if="!u.isActive" :size="15" />
-            <UserX     v-else              :size="15" />
-            </button>
-            <button class="btn-action btn-danger"
-            @click="deleteUser(u)" title="Supprimer"
-            :disabled="u.id === authStore.user?.id">
-            <Trash2 :size="15" />
-            </button>
-        </div>
-        </td>
-    </tr>
-    </tbody>
+        <span><strong>{{ u.firstName }} {{ u.lastName }}</strong></span>
+    </div>
+    </td>
+    <td>{{ u.email }}</td>
+    <td>
+    <span class="badge" :style="`background: ${getRoleColor(u)}22; color: ${getRoleColor(u)}`">
+        {{ u.userRole?.label || u.roleName || '-' }}
+    </span>
+    </td>
+    <td>
+    <span v-if="u.service" class="service-badge">
+        <Building2 :size="11" /> {{ u.service.nom }}
+    </span>
+    <span v-else class="text-muted">—</span>
+    </td>
+    <!-- Badge Directeur — visible uniquement pour les Managers -->
+    <td>
+    <span v-if="(u.userRole?.name || u.roleName) === 'MANAGER'" 
+        :class="`directeur-badge ${u.isDirecteur ? 'directeur-oui' : 'directeur-non'}`">
+        <Crown :size="11" />
+        {{ u.isDirecteur ? 'Directeur' : 'Manager' }}
+    </span>
+    <span v-else class="text-muted">—</span>
+    </td>
+    <td>
+    <span :class="`badge ${u.isActive ? 'badge-approuve' : 'badge-rejete'}`">
+        {{ u.isActive ? 'Actif' : 'Inactif' }}
+    </span>
+    </td>
+    <td>{{ formatDate(u.createdAt) }}</td>
+    <td>
+    <div class="actions">
+        <button class="btn-action btn-edit" @click="openEdit(u)" title="Modifier">
+        <Pencil :size="15" />
+        </button>
+        <button class="btn-action"
+        :class="u.isActive ? 'btn-warning' : 'btn-success'"
+        @click="toggleActive(u)"
+        :title="u.isActive ? 'Désactiver' : 'Activer'">
+        <UserCheck v-if="!u.isActive" :size="15" />
+        <UserX     v-else              :size="15" />
+        </button>
+        <button class="btn-action btn-danger"
+        @click="deleteUser(u)" title="Supprimer"
+        :disabled="u.id === authStore.user?.id">
+        <Trash2 :size="15" />
+        </button>
+    </div>
+    </td>
+</tr>
+</tbody>
 </table>
 
 <div class="pagination" v-if="pagination.pages > 1">
-    <button class="btn btn-secondary" :disabled="pagination.page === 1"
-    @click="loadUsers(pagination.page - 1)">
-    <ChevronLeft :size="15" /> Précédent
-    </button>
-    <span>Page {{ pagination.page }} / {{ pagination.pages }}</span>
-    <button class="btn btn-secondary" :disabled="pagination.page === pagination.pages"
-    @click="loadUsers(pagination.page + 1)">
-    Suivant <ChevronRight :size="15" />
-    </button>
+<button class="btn btn-secondary" :disabled="pagination.page === 1"
+@click="loadUsers(pagination.page - 1)">
+<ChevronLeft :size="15" /> Précédent
+</button>
+<span>Page {{ pagination.page }} / {{ pagination.pages }}</span>
+<button class="btn btn-secondary" :disabled="pagination.page === pagination.pages"
+@click="loadUsers(pagination.page + 1)">
+Suivant <ChevronRight :size="15" />
+</button>
 </div>
 </div>
 </main>
@@ -149,12 +149,12 @@ cancel-text="Annuler"
 
 <div class="form-row">
 <div class="form-group">
-    <label>Prénom *</label>
-    <input v-model="form.firstName" type="text" placeholder="Prénom" />
+<label>Prénom *</label>
+<input v-model="form.firstName" type="text" placeholder="Prénom" />
 </div>
 <div class="form-group">
-    <label>Nom *</label>
-    <input v-model="form.lastName" type="text" placeholder="Nom" />
+<label>Nom *</label>
+<input v-model="form.lastName" type="text" placeholder="Nom" />
 </div>
 </div>
 
@@ -165,22 +165,22 @@ cancel-text="Annuler"
 
 <div class="form-row">
 <div class="form-group">
-    <label>Rôle *</label>
-    <select v-model="form.roleId">
-    <option value="" disabled>Sélectionner un rôle</option>
-    <option v-for="r in rolesList" :key="r.id" :value="r.id">
-        {{ r.label }}
-    </option>
-    </select>
+<label>Rôle *</label>
+<select v-model="form.roleId">
+<option value="" disabled>Sélectionner un rôle</option>
+<option v-for="r in rolesList" :key="r.id" :value="r.id">
+    {{ r.label }}
+</option>
+</select>
 </div>
 <div class="form-group">
-    <label>Service</label>
-    <select v-model="form.serviceId">
-    <option value="">— Aucun service —</option>
-    <option v-for="s in servicesList" :key="s.id" :value="s.id">
-        {{ s.nom }}
-    </option>
-    </select>
+<label>Service</label>
+<select v-model="form.serviceId">
+<option value="">— Aucun service —</option>
+<option v-for="s in servicesList" :key="s.id" :value="s.id">
+    {{ s.nom }}
+</option>
+</select>
 </div>
 </div>
 
@@ -192,38 +192,38 @@ cancel-text="Annuler"
 <!-- ✅ Toggle Directeur — visible uniquement si le rôle sélectionné est MANAGER -->
 <div v-if="selectedRoleIsManager" class="form-group">
 <div class="directeur-toggle">
-    <div class="directeur-toggle-info">
-    <Crown :size="16" color="#7c3aed" />
-    <div>
-        <span class="directeur-toggle-label">Accès Directeur</span>
-        <p class="directeur-toggle-hint">
-        Le Directeur a accès à tous les documents et courriers de tous les départements.
-        Un Manager normal ne voit que son service.
-        </p>
-    </div>
-    </div>
-    <label class="toggle-switch">
-    <input type="checkbox" v-model="form.isDirecteur" />
-    <span class="toggle-slider"></span>
-    </label>
+<div class="directeur-toggle-info">
+<Crown :size="16" color="#7c3aed" />
+<div>
+    <span class="directeur-toggle-label">Accès Directeur</span>
+    <p class="directeur-toggle-hint">
+    Le Directeur a accès à tous les documents et courriers de tous les départements.
+    Un Manager normal ne voit que son service.
+    </p>
+</div>
+</div>
+<label class="toggle-switch">
+<input type="checkbox" v-model="form.isDirecteur" />
+<span class="toggle-slider"></span>
+</label>
 </div>
 </div>
 
 <div class="form-group">
 <label>{{ showEditModal ? 'Nouveau mot de passe (laisser vide = inchangé)' : 'Mot de passe *' }}</label>
 <div class="password-input">
-    <input v-model="form.password" :type="showPassword ? 'text' : 'password'"
-    placeholder="Mot de passe" />
-    <button class="btn-eye" @click="showPassword = !showPassword" type="button">
-    <Eye v-if="!showPassword" :size="16" />
-    <EyeOff v-else            :size="16" />
-    </button>
+<input v-model="form.password" :type="showPassword ? 'text' : 'password'"
+placeholder="Mot de passe" />
+<button class="btn-eye" @click="showPassword = !showPassword" type="button">
+<Eye v-if="!showPassword" :size="16" />
+<EyeOff v-else            :size="16" />
+</button>
 </div>
 </div>
 
 <template #actions>
 <button class="btn btn-primary" @click="handleSave">
-    <Save :size="15" /> {{ showEditModal ? 'Modifier' : 'Créer' }}
+<Save :size="15" /> {{ showEditModal ? 'Modifier' : 'Créer' }}
 </button>
 </template>
 </BaseModal>
@@ -240,7 +240,7 @@ import BaseModal  from '../components/BaseModal.vue'
 import {
 Users, Plus, Search, RotateCcw, Loader, Pencil,
 Trash2, UserCheck, UserX, ChevronLeft, ChevronRight,
-Building2, Crown, Eye, EyeOff
+Save, Eye, EyeOff, Building2, Crown  // ← Save était manquant
 } from 'lucide-vue-next'
 
 const authStore  = useAuthStore()
@@ -287,11 +287,11 @@ const loadUsers = async (page = 1) => {
 loading.value = true
 try {
 const res = await api().get('/users', {
-    params: {
-    page, limit: 10,
-    role:   filters.value.role   || undefined,
-    search: filters.value.search || undefined,
-    }
+params: {
+page, limit: 10,
+role:   filters.value.role   || undefined,
+search: filters.value.search || undefined,
+}
 })
 users.value      = res.data.data.users
 pagination.value = res.data.data.pagination
@@ -341,8 +341,8 @@ if (showEditModal.value && !data.password) delete data.password
 if (!selectedRoleIsManager.value) data.isDirecteur = false
 
 showEditModal.value
-    ? await api().put(`/users/${selectedUser.value.id}`, data)
-    : await api().post('/users', data)
+? await api().put(`/users/${selectedUser.value.id}`, data)
+: await api().post('/users', data)
 
 showCreateModal.value = false
 showEditModal.value   = false
